@@ -1,0 +1,43 @@
+# spotifyd configuration file
+# Copy this to ~/.config/spotifyd/spotifyd.conf or /etc/spotifyd.conf
+# See: https://github.com/Spotifyd/spotifyd/wiki/Configuration
+
+[global]
+# Your Spotify username
+username = "your_spotify_username"
+
+# Your Spotify password (or use password_cmd for secure storage)
+# password = "your_password"
+# Or use a command to get password securely:
+# password_cmd = "pass show spotify"
+
+# Backend (use alsa for Raspberry Pi)
+backend = "alsa"
+
+# Audio device (use default or specify)
+device = "default"
+
+# Bitrate (96, 160, 320)
+bitrate = 320
+
+# Volume control (alsa, alsa_linear, softvol)
+volume_controller = "alsa"
+
+# Device name shown in Spotify app
+device_name = "Raspberry Pi Music Player"
+
+# Cache directory
+cache_path = "/home/pi/.cache/spotifyd"
+
+# Enable D-Bus MPRIS interface (required for control)
+use_mpris = true
+
+# Initial volume (0-100)
+initial_volume = "75"
+
+# Autoplay on startup
+autoplay = false
+
+# Device type
+device_type = "computer"
+

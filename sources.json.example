@@ -1,0 +1,33 @@
+[
+  {
+    "id": "gospel_spotify",
+    "type": "spotify_playlist",
+    "label": "Spotify – Gospel",
+    "playlist_id": "spotify:playlist:YOUR_PLAYLIST_ID_HERE"
+  },
+  {
+    "id": "lofi_spotify",
+    "type": "spotify_playlist",
+    "label": "Spotify – Lofi",
+    "playlist_id": "spotify:playlist:YOUR_PLAYLIST_ID_HERE"
+  },
+  {
+    "id": "news_channel_1",
+    "type": "youtube_channel",
+    "label": "News Channel 1",
+    "channel_id": "UC_YOUR_CHANNEL_ID_HERE"
+  },
+  {
+    "id": "news_channel_2",
+    "type": "youtube_channel",
+    "label": "News Channel 2",
+    "channel_id": "UC_YOUR_CHANNEL_ID_HERE"
+  },
+  {
+    "id": "news_playlist",
+    "type": "youtube_playlist",
+    "label": "News Playlist",
+    "playlist_id": "PL_YOUR_PLAYLIST_ID_HERE"
+  }
+]
+
