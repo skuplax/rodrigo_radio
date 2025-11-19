@@ -5,6 +5,7 @@ A headless music and news player for Raspberry Pi controlled by physical buttons
 ## Features
 
 - **4-button control**: Play/Pause, Previous, Next, Cycle Source
+- **Rotary encoder volume control**: Optional digital rotary encoder for system audio volume
 - **Multiple sources**: Spotify playlists, YouTube channels, YouTube playlists
 - **Auto-resume**: Automatically starts playing the last selected source on boot
 - **Live stream detection**: Automatically plays live YouTube streams when available
@@ -17,6 +18,7 @@ A headless music and news player for Raspberry Pi controlled by physical buttons
 - 4x 12mm momentary buttons
 - 3.5mm audio jack (or HDMI audio)
 - Wiring for buttons to GPIO pins (default: 17, 27, 22, 23)
+- **Optional**: Digital rotary encoder (KY-040 or similar) for volume control
 
 ## Software Dependencies
 
@@ -32,14 +34,12 @@ sudo apt install -y \
     python3-pip
 ```
 
-**Note:** `spotifyd` is optional and may not be available in default repositories. It's only needed if you want to use Spotify sources. The installation script will attempt to install it, but will continue if it's not available. You can install it manually later if needed (see Troubleshooting section).
+**Note:** `raspotify` is required for Spotify sources. It will be installed automatically (see Spotify Setup section below).
 
 ### Python Packages
 
 ```bash
-pip3 install --user gpiozero
-# dbus-python is usually available via apt, but if needed:
-# pip3 install --user dbus-python
+pip3 install --user --break-system-packages gpiozero spotipy
 ```
 
 ## Installation
@@ -65,19 +65,15 @@ pip3 install --user gpiozero
    - Install Python packages
    - Set up configuration files
    - Install and optionally enable the systemd service
-   - Configure spotifyd (if desired)
 
-3. **Configure your sources**:
+4. **Set up Spotify** (if using Spotify sources):
+   See the "Spotify Setup" section below for detailed instructions.
+
+5. **Configure your sources**:
    ```bash
    nano /home/pi/music-player/sources.json
    ```
    Edit the file with your Spotify playlist IDs and YouTube channel/playlist IDs.
-
-4. **Configure Spotify** (if using Spotify):
-   ```bash
-   nano ~/.config/spotifyd/spotifyd.conf
-   ```
-   Add your Spotify username and password.
 
 ### Manual Installation
 
@@ -86,12 +82,17 @@ If you prefer to install manually:
 1. **Install system packages**:
    ```bash
    sudo apt update
-   sudo apt install -y spotifyd yt-dlp mpv python3-gpiozero python3-dbus python3-pip
+   sudo apt install -y yt-dlp mpv python3-gpiozero python3-pip
    ```
 
-2. **Install Python packages**:
+2. **Install raspotify** (for Spotify support):
    ```bash
-   pip3 install --user gpiozero
+   curl -sL https://dtcooper.github.io/raspotify/install.sh | sh
+   ```
+
+3. **Install Python packages**:
+   ```bash
+   pip3 install --user --break-system-packages gpiozero spotipy
    ```
 
 3. **Clone or copy this directory to `/home/pi/music-player`**
@@ -108,20 +109,10 @@ If you prefer to install manually:
    nano /home/pi/music-player/sources.json
    ```
 
-6. **Configure spotifyd**:
-   ```bash
-   mkdir -p ~/.config/spotifyd
-   cp /home/pi/music-player/spotifyd.conf.example ~/.config/spotifyd/spotifyd.conf
-   nano ~/.config/spotifyd/spotifyd.conf
-   ```
+6. **Set up Spotify** (if using Spotify sources):
+   See the "Spotify Setup" section below.
 
-7. **Start spotifyd** (user service):
-   ```bash
-   systemctl --user enable spotifyd
-   systemctl --user start spotifyd
-   ```
-
-8. **Install systemd service**:
+7. **Install systemd service**:
    ```bash
    sudo cp /home/pi/music-player/music-player.service /etc/systemd/system/
    sudo systemctl daemon-reload
@@ -138,6 +129,34 @@ Default pins (can be changed in `buttons.py` or `player_controller.py`):
 - Button 2 (Previous): GPIO 27
 - Button 3 (Next): GPIO 22
 - Button 4 (Cycle Source): GPIO 23
+
+### Rotary Encoder Configuration (Optional)
+
+To add volume control with a digital rotary encoder (e.g., KY-040):
+
+1. **Hardware Wiring**:
+   - **CLK** (Clock) → GPIO pin (e.g., GPIO 5)
+   - **DT** (Data) → GPIO pin (e.g., GPIO 6)
+   - **SW** (Switch/Button) → GPIO pin (e.g., GPIO 13) - optional, for mute toggle
+   - **+** → 3.3V
+   - **GND** → Ground
+
+2. **Software Configuration**: Edit `/home/skayflakes/music-player/player.py`:
+   ```python
+   encoder_pins = {'clk': 5, 'dt': 6, 'sw': 13, 'volume_step': 2}
+   ```
+   - `clk`: GPIO pin for CLK signal (required)
+   - `dt`: GPIO pin for DT signal (required)
+   - `sw`: GPIO pin for switch/button (optional, for mute toggle)
+   - `volume_step`: Volume change per encoder step in percent (default: 2)
+
+3. **Test the encoder**: Before enabling in the service, test it:
+   ```bash
+   sudo systemctl stop music-player.service
+   ./test_rotary_encoder.py
+   ```
+
+The encoder controls system audio volume using ALSA mixer (`amixer`). Rotate clockwise to increase volume, counter-clockwise to decrease. Press the switch (if connected) to toggle mute/unmute.
 
 ### Sources Configuration
 
@@ -159,6 +178,63 @@ Or manually in `/boot/config.txt`:
 ```
 dtparam=audio=on
 ```
+
+### Spotify Setup
+
+This player uses **raspotify** as the Spotify Connect client and the **Spotify Web API** for programmatic control. This allows independent control without needing the Spotify mobile/desktop app.
+
+#### 1. Install and Configure Raspotify
+
+Raspotify should already be installed. Verify it's running:
+```bash
+sudo systemctl status raspotify
+```
+
+Configure raspotify for 3.5mm jack audio (already configured if you used the automated setup):
+```bash
+sudo nano /etc/raspotify/conf
+```
+
+Ensure these settings are present:
+```bash
+DEVICE_NAME="Raspberry Pi"
+BACKEND_ARGS="--backend alsa --device sysdefault:Headphones"
+BITRATE="160"
+```
+
+Restart raspotify:
+```bash
+sudo systemctl restart raspotify
+```
+
+#### 2. Set Up Spotify Web API
+
+To enable programmatic control, you need to set up OAuth authentication:
+
+1. **Create a Spotify App**:
+   - Go to https://developer.spotify.com/dashboard
+   - Click "Create app"
+   - Fill in app details (name, description)
+   - Add redirect URI: `http://127.0.0.1:8888/callback`
+   - Save and note your **Client ID** and **Client Secret**
+
+2. **Run the OAuth Setup Script**:
+   ```bash
+   cd /home/pi/music-player
+   python3 spotify_oauth_setup.py
+   ```
+   
+   Follow the prompts:
+   - Enter your Client ID and Client Secret
+   - Authorize the app in your browser
+   - Paste the redirect URL when prompted
+   
+   The script will save your credentials to `spotify_api_config.json`.
+
+3. **Verify Setup**:
+   The script will test the connection. If successful, you're ready to use Spotify sources!
+
+**Note**: You need a **Spotify Premium** account for this to work.
 
 ## Usage
 
@@ -206,6 +282,12 @@ sudo systemctl status music-player.service
 - **Button 3 (Next)**: Next track/item
 - **Button 4 (Cycle Source)**: Switch to next configured source
 
+## Rotary Encoder Functions (if enabled)
+
+- **Rotate Clockwise**: Increase system volume
+- **Rotate Counter-clockwise**: Decrease system volume
+- **Press Switch** (if connected): Toggle mute/unmute
+
 ## File Structure
 
 ```
@@ -235,22 +317,27 @@ sudo systemctl status music-player.service
 - Verify audio device: `aplay -l`
 - Check volume: `alsamixer`
 
-### spotifyd not installed or not working
+### Spotify/Raspotify Issues
 
-**If spotifyd is not installed:**
-- spotifyd is optional and may not be in default repositories
-- Install from source (requires Rust):
-  ```bash
-  sudo apt install -y cargo rustc libasound2-dev libssl-dev pkg-config
-  cargo install spotifyd --locked
-  ```
-- Or download pre-built binary from: https://github.com/Spotifyd/spotifyd/releases
-- Skip spotifyd if you only use YouTube sources
+**If raspotify is not running:**
+- Check status: `sudo systemctl status raspotify`
+- Start service: `sudo systemctl start raspotify`
+- Check logs: `sudo journalctl -u raspotify -f`
 
-**If spotifyd is installed but not working:**
-- Check if spotifyd is running: `systemctl --user status spotifyd`
-- Verify credentials in `~/.config/spotifyd/spotifyd.conf`
-- Check logs: `journalctl --user -u spotifyd -f`
+**If Spotify Web API authentication fails:**
+- Verify config file exists: `ls -la ~/music-player/spotify_api_config.json`
+- Re-run OAuth setup: `python3 ~/music-player/spotify_oauth_setup.py`
+- Check that redirect URI matches in Spotify app settings: `http://127.0.0.1:8888/callback`
+
+**If device not found:**
+- Make sure raspotify is running and visible in Spotify app
+- Connect to "Raspberry Pi" device once from Spotify app to register it
+- Check device name matches in `/etc/raspotify/conf`
+
+**If playback doesn't start:**
+- Verify you have Spotify Premium (required for Web API)
+- Check that the playlist/album/track URI is correct
+- Review logs: `sudo journalctl -u raspotify -f`
 
 ### YouTube playback issues
 - Verify yt-dlp is up to date: `sudo apt update && sudo apt upgrade yt-dlp`

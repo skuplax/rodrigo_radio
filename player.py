@@ -6,8 +6,9 @@ import logging
 from pathlib import Path
 from player_controller import PlayerController
 
-# Configure logging
-LOG_DIR = Path("/home/pi/music-player/logs")
+# Configure logging - use script directory
+SCRIPT_DIR = Path(__file__).parent.absolute()
+LOG_DIR = SCRIPT_DIR / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "player.log"
 
@@ -45,8 +46,22 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     
     try:
-        # Initialize controller
-        controller = PlayerController()
+        # Initialize controller with paths relative to script directory
+        sources_file = SCRIPT_DIR / "sources.json"
+        state_file = SCRIPT_DIR / "state.json"
+        history_file = SCRIPT_DIR / "history.json"
+        
+        # Optional: Configure rotary encoder pins
+        # Set to None to disable rotary encoder
+        # Example: encoder_pins = {'clk': 5, 'dt': 6, 'sw': 13, 'volume_step': 2}
+        encoder_pins = {'clk': 5, 'dt': 6, 'sw': None, 'volume_step': 2}  # KY-040 on GPIO 5 (CLK) and 6 (DT)
+        
+        controller = PlayerController(
+            sources_file=sources_file,
+            state_file=state_file,
+            history_file=history_file,
+            encoder_pins=encoder_pins
+        )
         
         # Run (blocks forever)
         controller.run()

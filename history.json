@@ -1,0 +1,3519 @@
+[
+  {
+    "timestamp": "2025-11-19T08:50:11.210765",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:11.213886",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:16.025264",
+    "action": "pause"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:16.873075",
+    "action": "resume"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:19.051135",
+    "action": "pause"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:22.446865",
+    "action": "previous"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:22.447679",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:26.078048",
+    "action": "previous"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:26.078881",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:27.436939",
+    "action": "resume"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:31.415742",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:31.416780",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Ryan Stevenson - All Falls Away"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:37.872894",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T08:50:37.874692",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T08:51:00.932172",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 08:51"
+  },
+  {
+    "timestamp": "2025-11-19T08:51:00.934214",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T08:51:59.106641",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:51:59.108469",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 08:51"
+  },
+  {
+    "timestamp": "2025-11-19T08:51:59.115370",
+    "action": "pause"
+  },
+  {
+    "timestamp": "2025-11-19T08:51:59.118672",
+    "action": "resume"
+  },
+  {
+    "timestamp": "2025-11-19T08:52:08.763592",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:52:08.764823",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 08:52"
+  },
+  {
+    "timestamp": "2025-11-19T08:52:16.624635",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:52:16.626111",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 08:52"
+  },
+  {
+    "timestamp": "2025-11-19T08:52:18.122805",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T08:52:18.124274",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T08:52:19.758242",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T08:52:19.761015",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T08:52:27.834304",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 08:52"
+  },
+  {
+    "timestamp": "2025-11-19T08:52:27.836803",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:02.665983",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:03.400168",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:03.402382",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Ryan Stevenson - All Falls Away"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:05.075890",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:05.079850",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:15.705720",
+    "action": "resume"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:19.454240",
+    "action": "pause"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:22.753414",
+    "action": "previous"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:22.755119",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:27.714775",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:27.716383",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jekalyn Carr - My Portion"
+  },
+  {
+    "timestamp": "2025-11-19T08:53:30.795222",
+    "action": "resume"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:11.974785",
+    "action": "previous"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:11.976470",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jekalyn Carr - My Portion"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:20.374109",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:20.376135",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:30.464844",
+    "action": "previous"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:30.466763",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:37.047413",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:37.050244",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:38.629085",
+    "action": "previous"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:38.630910",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:42.217872",
+    "action": "resume"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:46.602234",
+    "action": "pause"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:48.808087",
+    "action": "resume"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:51.247999",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:51.251872",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jekalyn Carr - My Portion"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:54.514571",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:54.516827",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Maranda Curtis - Lazarus"
+  },
+  {
+    "timestamp": "2025-11-19T08:54:59.020766",
+    "action": "pause"
+  },
+  {
+    "timestamp": "2025-11-19T08:55:01.266466",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:55:01.268243",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Travis Greene, Le'Andria Johnson - Wonder (feat. Le'Andria Johnson)"
+  },
+  {
+    "timestamp": "2025-11-19T08:55:02.960508",
+    "action": "pause"
+  },
+  {
+    "timestamp": "2025-11-19T08:55:06.823495",
+    "action": "previous"
+  },
+  {
+    "timestamp": "2025-11-19T08:55:06.826548",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Maranda Curtis - Lazarus"
+  },
+  {
+    "timestamp": "2025-11-19T08:55:10.866902",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:55:10.868893",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Travis Greene, Le'Andria Johnson - Wonder (feat. Le'Andria Johnson)"
+  },
+  {
+    "timestamp": "2025-11-19T08:55:12.028050",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:55:12.030305",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jonathan Traylor - I'll Follow You"
+  },
+  {
+    "timestamp": "2025-11-19T08:55:15.806271",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:55:15.808245",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jonathan McReynolds, Mali Music - Jump Ship - Live"
+  },
+  {
+    "timestamp": "2025-11-19T08:56:51.882783",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T08:56:51.896004",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T08:57:10.004464",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:57:10.006660",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jekalyn Carr - My Portion"
+  },
+  {
+    "timestamp": "2025-11-19T08:57:16.257555",
+    "action": "pause"
+  },
+  {
+    "timestamp": "2025-11-19T08:57:18.632809",
+    "action": "previous"
+  },
+  {
+    "timestamp": "2025-11-19T08:57:18.640517",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jekalyn Carr - My Portion"
+  },
+  {
+    "timestamp": "2025-11-19T08:57:29.862360",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T08:57:29.864462",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Maranda Curtis - Lazarus"
+  },
+  {
+    "timestamp": "2025-11-19T08:57:40.676777",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 08:57"
+  },
+  {
+    "timestamp": "2025-11-19T08:57:40.680752",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T08:59:01.673758",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T08:59:01.676292",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T08:59:06.256874",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T08:59:06.264496",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T08:59:18.361041",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 08:59"
+  },
+  {
+    "timestamp": "2025-11-19T08:59:18.365828",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:00:55.645772",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:01:01.708002",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:01:01.711536",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:01:13.796719",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:01"
+  },
+  {
+    "timestamp": "2025-11-19T09:01:13.799842",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:01:38.035018",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:01:38.038283",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:01:39.847766",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:01:39.851286",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:01:48.260930",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:01"
+  },
+  {
+    "timestamp": "2025-11-19T09:01:48.265633",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:02:22.947311",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:02"
+  },
+  {
+    "timestamp": "2025-11-19T09:02:22.951709",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:03:21.896309",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:03:21.899974",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:03:28.849314",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:03:28.853082",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:03:55.034322",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:03:55.037514",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:04:06.541446",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:04"
+  },
+  {
+    "timestamp": "2025-11-19T09:04:06.549623",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:04:30.465126",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:04:30.468874",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:04:32.214881",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:04:32.218251",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:05:14.116690",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:05:14.120037",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:05:24.087246",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:05:24.092431",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:05:25.167328",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:05"
+  },
+  {
+    "timestamp": "2025-11-19T09:05:25.177394",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:05:32.306721",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Spotify \u2013 Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:05:42.958407",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:05"
+  },
+  {
+    "timestamp": "2025-11-19T09:05:58.471372",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:05:58.474736",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Spotify \u2013 Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:10:57.148842",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:10:57.153153",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:12:33.771005",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:12:33.774900",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:12:53.842945",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:12"
+  },
+  {
+    "timestamp": "2025-11-19T09:12:53.847699",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:15:05.616866",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:15:05.623905",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:15:07.864971",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:15:07.868546",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:15:17.533539",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:15"
+  },
+  {
+    "timestamp": "2025-11-19T09:15:17.537268",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:15:48.173594",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:15:48.180083",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:15:51.644635",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:15:51.652921",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:16:00.938936",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:15"
+  },
+  {
+    "timestamp": "2025-11-19T09:16:00.943020",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:16:30.540103",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:16"
+  },
+  {
+    "timestamp": "2025-11-19T09:16:30.544376",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:16:50.747436",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:16"
+  },
+  {
+    "timestamp": "2025-11-19T09:16:50.752120",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:17:37.634891",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:17:37.639622",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:17:44.285374",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:17:44.290531",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:17:58.082824",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:17"
+  },
+  {
+    "timestamp": "2025-11-19T09:17:58.087329",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:18:12.357362",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:18"
+  },
+  {
+    "timestamp": "2025-11-19T09:18:12.363649",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:18:40.696570",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:18:40.703041",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:18:43.406647",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:18:43.411953",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:18:47.500629",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:18"
+  },
+  {
+    "timestamp": "2025-11-19T09:18:47.506189",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:18:53.121747",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:18"
+  },
+  {
+    "timestamp": "2025-11-19T09:18:53.126047",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:19:45.305545",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:19"
+  },
+  {
+    "timestamp": "2025-11-19T09:19:45.310083",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:09.184521",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:09.189809",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:12.050774",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:12.151564",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:15.702647",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:20"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:15.726016",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:20"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:15.731006",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:15.756753",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:24.707021",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:20"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:24.711946",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:54.174563",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:20"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:54.182273",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:57.415775",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:20:57.420809",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:21:01.399847",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:21:01.499690",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:21:02.792164",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:21"
+  },
+  {
+    "timestamp": "2025-11-19T09:21:02.799836",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:21:16.865106",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:21"
+  },
+  {
+    "timestamp": "2025-11-19T09:21:16.870049",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:21:32.720032",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:21"
+  },
+  {
+    "timestamp": "2025-11-19T09:21:32.725961",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:22:14.059741",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:22"
+  },
+  {
+    "timestamp": "2025-11-19T09:22:14.069590",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:22:20.598968",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:22:20.604203",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:22:24.116025",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:22:24.576284",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:22:32.794116",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:22"
+  },
+  {
+    "timestamp": "2025-11-19T09:22:33.217851",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "GMA Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:23:09.791140",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:23"
+  },
+  {
+    "timestamp": "2025-11-19T09:23:09.798096",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "ABS-CBN News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:23:46.330531",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:23:46.352262",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:23:47.547228",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:23"
+  },
+  {
+    "timestamp": "2025-11-19T09:23:47.552741",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:23:49.261540",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:23:49.267397",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:24:04.950281",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:24"
+  },
+  {
+    "timestamp": "2025-11-19T09:24:05.359070",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:24:21.760979",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:24"
+  },
+  {
+    "timestamp": "2025-11-19T09:24:21.766226",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:28:02.962065",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:28"
+  },
+  {
+    "timestamp": "2025-11-19T09:28:02.967475",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:29:28.464659",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:29:28.470991",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:29:32.696109",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:29:33.110767",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:29:41.461156",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:29"
+  },
+  {
+    "timestamp": "2025-11-19T09:29:41.864028",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:32:29.736405",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index"
+  },
+  {
+    "timestamp": "2025-11-19T09:32:29.750715",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:39:35.808924",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:39:35.815604",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:39:36.724213",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:39:36.737178",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:39:39.030017",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:39"
+  },
+  {
+    "timestamp": "2025-11-19T09:39:39.036571",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:39:44.844098",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:39"
+  },
+  {
+    "timestamp": "2025-11-19T09:39:44.849676",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:40:08.858542",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:40"
+  },
+  {
+    "timestamp": "2025-11-19T09:40:08.863947",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:41:57.229250",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:41:57.237979",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:42:02.392243",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:42:02.800184",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:42:29.398349",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:42"
+  },
+  {
+    "timestamp": "2025-11-19T09:42:29.818514",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:43:57.233672",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:43"
+  },
+  {
+    "timestamp": "2025-11-19T09:43:57.242274",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:44:19.222897",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:44"
+  },
+  {
+    "timestamp": "2025-11-19T09:44:19.228601",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:47:09.298681",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:47"
+  },
+  {
+    "timestamp": "2025-11-19T09:47:09.304083",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:47:42.592771",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:47"
+  },
+  {
+    "timestamp": "2025-11-19T09:47:42.598442",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:49:32.918964",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:49"
+  },
+  {
+    "timestamp": "2025-11-19T09:49:32.925513",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:49:56.347121",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:49"
+  },
+  {
+    "timestamp": "2025-11-19T09:49:56.352616",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:51:10.935860",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:51:10.944754",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:51:22.293609",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:51:22.833493",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:51:36.298471",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:51"
+  },
+  {
+    "timestamp": "2025-11-19T09:51:36.807821",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:09.381560",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:09.390187",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:11.515757",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:54"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:11.595120",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:22.561820",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:22.567953",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:31.256229",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:31.715773",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:34.086965",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:54"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:34.522086",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:41.091146",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:54"
+  },
+  {
+    "timestamp": "2025-11-19T09:54:41.634502",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:02.884414",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:02.890318",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:55"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:11.385255",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:11.391862",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:55"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:19.722945",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:19.730284",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:55"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:28.114672",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:28.120517",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:55"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:36.253796",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:36.259649",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:55"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:37.953619",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:37.981197",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:39.875835",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:40.412031",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:40.420488",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:40.435842",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:40.448289",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:40.461858",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:41.567604",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:41.989983",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:48.288568",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:55"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:48.314145",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:55"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:48.320331",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:48.333754",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:53.288826",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:55"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:53.309986",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:53.507066",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:53.523800",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:54.761685",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:55"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:54.777522",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:58.514194",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:55"
+  },
+  {
+    "timestamp": "2025-11-19T09:55:58.522501",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:56:03.302771",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:56"
+  },
+  {
+    "timestamp": "2025-11-19T09:56:03.309784",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:56:49.931101",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:56:49.938590",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:56:55.628553",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T09:56:56.163220",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:57:11.504835",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:57"
+  },
+  {
+    "timestamp": "2025-11-19T09:57:11.924116",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T09:57:19.137834",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T09:57:19.145926",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T09:57:23.913781",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 09:57"
+  },
+  {
+    "timestamp": "2025-11-19T09:57:23.923942",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:00:24.503731",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:00:24.511890",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:00:39.409445",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:00:39.833300",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:01:06.080502",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:01:06.488976",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:06:43.436422",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T10:06:43.443770",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:07:10.745975",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:07"
+  },
+  {
+    "timestamp": "2025-11-19T10:07:10.753290",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:08:49.509484",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:08:49.517515",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:09:03.342362",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T10:09:03.743610",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:09:13.725745",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:09"
+  },
+  {
+    "timestamp": "2025-11-19T10:09:14.130475",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:10:55.887621",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:10"
+  },
+  {
+    "timestamp": "2025-11-19T10:10:55.897462",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:11:38.922068",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:11:38.930557",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:12:41.820488",
+    "action": "pause"
+  },
+  {
+    "timestamp": "2025-11-19T10:12:43.281958",
+    "action": "resume"
+  },
+  {
+    "timestamp": "2025-11-19T10:13:07.337458",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:13:07.345072",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:13:37.100953",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:13:37.109997",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:16:08.288611",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:16:08.303020",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:19:32.243234",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T10:19:32.674061",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:19:50.531954",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:19"
+  },
+  {
+    "timestamp": "2025-11-19T10:19:50.973721",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:23:41.371885",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:23"
+  },
+  {
+    "timestamp": "2025-11-19T10:23:41.379178",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:24:00.037376",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:23"
+  },
+  {
+    "timestamp": "2025-11-19T10:24:00.050792",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:24:57.267600",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:24"
+  },
+  {
+    "timestamp": "2025-11-19T10:24:57.274872",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:25:53.152470",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:25"
+  },
+  {
+    "timestamp": "2025-11-19T10:25:53.162989",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:26:08.490377",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:26"
+  },
+  {
+    "timestamp": "2025-11-19T10:26:08.514252",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:26:54.772680",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:26:54.780649",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:26:57.812186",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T10:26:58.268099",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:28:03.723274",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T10:28:03.737666",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:28:15.131180",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T10:28:15.140920",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:28:21.614082",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T10:28:21.628824",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:28:47.366013",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:28"
+  },
+  {
+    "timestamp": "2025-11-19T10:28:47.776594",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:28:55.962740",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:28:55.973177",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:29:00.251101",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T10:29:00.260067",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:33:15.516663",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:33"
+  },
+  {
+    "timestamp": "2025-11-19T10:33:15.524901",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:33:46.748254",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:33:46.766869",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:33:49.493496",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T10:33:49.501294",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T10:34:21.397326",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:34"
+  },
+  {
+    "timestamp": "2025-11-19T10:34:21.817373",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:34:53.232003",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 10:34"
+  },
+  {
+    "timestamp": "2025-11-19T10:34:53.240025",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T10:35:10.189405",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T10:35:10.198184",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T12:25:30.742768",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 12:25"
+  },
+  {
+    "timestamp": "2025-11-19T12:25:30.821399",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T12:25:40.946578",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 12:25"
+  },
+  {
+    "timestamp": "2025-11-19T12:25:40.954594",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T12:25:56.673063",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T12:25:56.680813",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 12:25"
+  },
+  {
+    "timestamp": "2025-11-19T12:49:26.420390",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T12:49:26.428245",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 12:49"
+  },
+  {
+    "timestamp": "2025-11-19T12:53:43.616701",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index"
+  },
+  {
+    "timestamp": "2025-11-19T12:53:43.627000",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T12:53:58.859982",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 12:53"
+  },
+  {
+    "timestamp": "2025-11-19T12:53:58.867757",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T13:05:29.584759",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T13:05:29.593793",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:06:18.699795",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index"
+  },
+  {
+    "timestamp": "2025-11-19T13:06:19.197727",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T13:06:34.082876",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 13:06"
+  },
+  {
+    "timestamp": "2025-11-19T13:06:34.091798",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T13:06:42.211974",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T13:06:42.232430",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:06:45.632330",
+    "action": "play",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist",
+    "item_name": "Jason Nelson - Breathe"
+  },
+  {
+    "timestamp": "2025-11-19T13:06:45.641273",
+    "action": "source_change",
+    "source_id": "lofi_spotify",
+    "source_label": "Music - Lofi",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:13:41.159739",
+    "action": "play",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist",
+    "item_name": "Tauren Wells - The Church Is On Fire"
+  },
+  {
+    "timestamp": "2025-11-19T13:13:41.176209",
+    "action": "source_change",
+    "source_id": "gospel_spotify",
+    "source_label": "Music - Gospel",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:16:39.972741",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T13:16:39.987546",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:17:04.708384",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T13:17:04.726921",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:17:35.543206",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T13:17:35.565062",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:19:19.751265",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 13:19"
+  },
+  {
+    "timestamp": "2025-11-19T13:19:20.290608",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T13:20:02.509010",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index 2025-11-19 13:20"
+  },
+  {
+    "timestamp": "2025-11-19T13:20:02.517616",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T13:20:15.808756",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T13:20:15.821413",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:20:33.370974",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T13:20:33.379373",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Frank Sinatra - I've Got You Under My Skin - Remastered 1998"
+  },
+  {
+    "timestamp": "2025-11-19T13:23:09.365980",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T13:23:09.381073",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:23:13.877429",
+    "action": "play",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Kenny Rogers - Lady"
+  },
+  {
+    "timestamp": "2025-11-19T13:23:13.887472",
+    "action": "source_change",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:23:34.903594",
+    "action": "play",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Kenny Rogers - Lady"
+  },
+  {
+    "timestamp": "2025-11-19T13:23:34.913470",
+    "action": "source_change",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:23:43.985201",
+    "action": "play",
+    "source_id": "the_beatles_greatest_hits",
+    "source_label": "Music - The Beatles Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Yeat - COM\u00cb N GO"
+  },
+  {
+    "timestamp": "2025-11-19T13:23:44.007424",
+    "action": "source_change",
+    "source_id": "the_beatles_greatest_hits",
+    "source_label": "Music - The Beatles Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:24:04.567833",
+    "action": "play",
+    "source_id": "the_beatles_greatest_hits",
+    "source_label": "Music - The Beatles Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Yeat - COM\u00cb N GO"
+  },
+  {
+    "timestamp": "2025-11-19T13:24:04.579088",
+    "action": "source_change",
+    "source_id": "the_beatles_greatest_hits",
+    "source_label": "Music - The Beatles Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:24:44.331735",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T13:24:44.342756",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:24:47.525993",
+    "action": "play",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Kenny Rogers - Lady"
+  },
+  {
+    "timestamp": "2025-11-19T13:24:47.538156",
+    "action": "source_change",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:26:24.447284",
+    "action": "play",
+    "source_id": "the_beatles_greatest_hits",
+    "source_label": "Music - The Beatles Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Bread - Make It with You"
+  },
+  {
+    "timestamp": "2025-11-19T13:26:24.457171",
+    "action": "source_change",
+    "source_id": "the_beatles_greatest_hits",
+    "source_label": "Music - The Beatles Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:26:55.935963",
+    "action": "next"
+  },
+  {
+    "timestamp": "2025-11-19T13:26:55.945996",
+    "action": "play",
+    "source_id": "the_beatles_greatest_hits",
+    "source_label": "Music - The Beatles Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Bread - Everything I Own"
+  },
+  {
+    "timestamp": "2025-11-19T13:28:07.596071",
+    "action": "play",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Kenny Rogers - Lady"
+  },
+  {
+    "timestamp": "2025-11-19T13:28:07.605437",
+    "action": "source_change",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:28:12.409222",
+    "action": "play",
+    "source_id": "bread_greatest_hits",
+    "source_label": "Music - Bread Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Bread - Make It with You"
+  },
+  {
+    "timestamp": "2025-11-19T13:28:12.433077",
+    "action": "source_change",
+    "source_id": "bread_greatest_hits",
+    "source_label": "Music - Bread Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:28:15.818945",
+    "action": "play",
+    "source_id": "carpenters_greatest_hits",
+    "source_label": "Music - Carpenters Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Carpenters - Rainy Days And Mondays"
+  },
+  {
+    "timestamp": "2025-11-19T13:28:15.828811",
+    "action": "source_change",
+    "source_id": "carpenters_greatest_hits",
+    "source_label": "Music - Carpenters Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:29:25.147489",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index"
+  },
+  {
+    "timestamp": "2025-11-19T13:29:25.621397",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T13:33:13.826229",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T13:33:13.841791",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:33:19.005105",
+    "action": "play",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Kenny Rogers - Lady"
+  },
+  {
+    "timestamp": "2025-11-19T13:33:19.021281",
+    "action": "source_change",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:33:32.035905",
+    "action": "play",
+    "source_id": "bread_greatest_hits",
+    "source_label": "Music - Bread Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Bread - Make It with You"
+  },
+  {
+    "timestamp": "2025-11-19T13:33:32.046763",
+    "action": "source_change",
+    "source_id": "bread_greatest_hits",
+    "source_label": "Music - Bread Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:33:35.636823",
+    "action": "play",
+    "source_id": "carpenters_greatest_hits",
+    "source_label": "Music - Carpenters Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Carpenters - Rainy Days And Mondays"
+  },
+  {
+    "timestamp": "2025-11-19T13:33:35.664136",
+    "action": "source_change",
+    "source_id": "carpenters_greatest_hits",
+    "source_label": "Music - Carpenters Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:33:59.083066",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "YouTube Audio"
+  },
+  {
+    "timestamp": "2025-11-19T13:33:59.607975",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T13:34:28.770358",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "YouTube Audio"
+  },
+  {
+    "timestamp": "2025-11-19T13:34:28.785968",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T13:54:23.474413",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T13:54:23.485458",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:54:29.097339",
+    "action": "play",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Kenny Rogers - Lady"
+  },
+  {
+    "timestamp": "2025-11-19T13:54:29.108141",
+    "action": "source_change",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:54:35.372986",
+    "action": "play",
+    "source_id": "bread_greatest_hits",
+    "source_label": "Music - Bread Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Bread - Make It with You"
+  },
+  {
+    "timestamp": "2025-11-19T13:54:35.382559",
+    "action": "source_change",
+    "source_id": "bread_greatest_hits",
+    "source_label": "Music - Bread Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:54:42.705591",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "YouTube Audio"
+  },
+  {
+    "timestamp": "2025-11-19T13:54:43.143131",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T13:57:51.568266",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T13:57:51.582848",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:57:53.960496",
+    "action": "play",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Kenny Rogers - Lady"
+  },
+  {
+    "timestamp": "2025-11-19T13:57:54.001071",
+    "action": "source_change",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:57:56.613525",
+    "action": "play",
+    "source_id": "bread_greatest_hits",
+    "source_label": "Music - Bread Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Bread - Make It with You"
+  },
+  {
+    "timestamp": "2025-11-19T13:57:56.630224",
+    "action": "source_change",
+    "source_id": "bread_greatest_hits",
+    "source_label": "Music - Bread Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:57:59.385311",
+    "action": "play",
+    "source_id": "carpenters_greatest_hits",
+    "source_label": "Music - Carpenters Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Carpenters - Rainy Days And Mondays"
+  },
+  {
+    "timestamp": "2025-11-19T13:57:59.396545",
+    "action": "source_change",
+    "source_id": "carpenters_greatest_hits",
+    "source_label": "Music - Carpenters Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T13:58:12.210578",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "YouTube Audio"
+  },
+  {
+    "timestamp": "2025-11-19T13:58:12.626805",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T14:01:55.918336",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T14:01:55.939013",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T14:01:58.613699",
+    "action": "play",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Kenny Rogers - Lady"
+  },
+  {
+    "timestamp": "2025-11-19T14:01:58.629794",
+    "action": "source_change",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T14:02:04.034986",
+    "action": "play",
+    "source_id": "carpenters_greatest_hits",
+    "source_label": "Music - Carpenters Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Carpenters - Rainy Days And Mondays"
+  },
+  {
+    "timestamp": "2025-11-19T14:02:04.048055",
+    "action": "source_change",
+    "source_id": "carpenters_greatest_hits",
+    "source_label": "Music - Carpenters Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T14:02:59.295032",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index"
+  },
+  {
+    "timestamp": "2025-11-19T14:02:59.305671",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T14:03:15.650531",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T14:03:15.668769",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T14:03:18.539339",
+    "action": "play",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Kenny Rogers - Lady"
+  },
+  {
+    "timestamp": "2025-11-19T14:03:18.551849",
+    "action": "source_change",
+    "source_id": "kenny_rogers_greatest_hits",
+    "source_label": "Music - Kenny Rogers Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T14:03:23.069040",
+    "action": "play",
+    "source_id": "carpenters_greatest_hits",
+    "source_label": "Music - Carpenters Greatest Hits",
+    "source_type": "spotify_playlist",
+    "item_name": "Carpenters - Rainy Days And Mondays"
+  },
+  {
+    "timestamp": "2025-11-19T14:03:23.095356",
+    "action": "source_change",
+    "source_id": "carpenters_greatest_hits",
+    "source_label": "Music - Carpenters Greatest Hits",
+    "source_type": "spotify_playlist"
+  },
+  {
+    "timestamp": "2025-11-19T14:03:41.430556",
+    "action": "play",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel",
+    "item_name": "index"
+  },
+  {
+    "timestamp": "2025-11-19T14:03:42.078556",
+    "action": "source_change",
+    "source_id": "news_channel_1",
+    "source_label": "G M A Integrated News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T14:05:37.296017",
+    "action": "play",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel",
+    "item_name": "index"
+  },
+  {
+    "timestamp": "2025-11-19T14:05:37.306294",
+    "action": "source_change",
+    "source_id": "news_channel_2",
+    "source_label": "A B S - C B N News",
+    "source_type": "youtube_channel"
+  },
+  {
+    "timestamp": "2025-11-19T14:05:55.946593",
+    "action": "play",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist",
+    "item_name": "Nat King Cole - Unforgettable"
+  },
+  {
+    "timestamp": "2025-11-19T14:05:55.963893",
+    "action": "source_change",
+    "source_id": "80s_love_songs",
+    "source_label": "Music - 80s Love Songs",
+    "source_type": "spotify_playlist"
+  }
+]

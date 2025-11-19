@@ -7,7 +7,15 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_HISTORY_FILE = Path("/home/pi/music-player/history.json")
+# Default paths - use current working directory if script is in music-player directory
+# Otherwise fall back to /home/pi/music-player for backwards compatibility
+_SCRIPT_DIR = Path(__file__).parent.absolute()
+if _SCRIPT_DIR.name == "music-player" or (_SCRIPT_DIR / "sources.json.example").exists():
+    _BASE_DIR = _SCRIPT_DIR
+else:
+    _BASE_DIR = Path("/home/pi/music-player")
+
+DEFAULT_HISTORY_FILE = _BASE_DIR / "history.json"
 MAX_HISTORY_ENTRIES = 1000  # Keep last 1000 entries
 
 

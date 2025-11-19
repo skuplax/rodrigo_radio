@@ -54,7 +54,8 @@ class YouTubeBackend(BaseBackend):
                 logger.info(f"Found live stream URL for channel {channel_id}")
                 return url
             else:
-                logger.debug(f"No live stream found for channel {channel_id}")
+                error_msg = result.stderr.strip() if result.stderr else "No error message"
+                logger.debug(f"No live stream found for channel {channel_id}: {error_msg}")
                 return None
                 
         except subprocess.TimeoutExpired:
@@ -96,7 +97,9 @@ class YouTubeBackend(BaseBackend):
                 logger.info(f"Found latest video URL for channel {channel_id}")
                 return url
             else:
-                logger.error(f"Failed to get latest video for channel {channel_id}")
+                error_msg = result.stderr.strip() if result.stderr else "No error message"
+                logger.error(f"Failed to get latest video for channel {channel_id}: {error_msg}")
+                logger.debug(f"yt-dlp stdout: {result.stdout.strip()}")
                 return None
                 
         except subprocess.TimeoutExpired:
@@ -139,7 +142,9 @@ class YouTubeBackend(BaseBackend):
                 logger.info(f"Found playlist URL for {playlist_id}")
                 return url
             else:
-                logger.error(f"Failed to get playlist URL: {playlist_id}")
+                error_msg = result.stderr.strip() if result.stderr else "No error message"
+                logger.error(f"Failed to get playlist URL: {playlist_id}: {error_msg}")
+                logger.debug(f"yt-dlp stdout: {result.stdout.strip()}")
                 return None
                 
         except subprocess.TimeoutExpired:
@@ -173,20 +178,43 @@ class YouTubeBackend(BaseBackend):
             self.stop()
             
             # Start mpv in subprocess
+            # For HLS streams, add options for better compatibility
             cmd = [
                 'mpv',
                 '--no-video',
-                '--audio-format=best',
                 '--no-terminal',
                 '--quiet',
+                '--stream-lavf-o=timeout=10000000',  # Increase timeout for HLS
+                '--cache=yes',  # Enable caching for better stream handling
                 url
             ]
+            
+            # Log stderr to a file for debugging
+            log_file = Path("/home/skayflakes/music-player/logs/mpv.log")
+            log_file.parent.mkdir(parents=True, exist_ok=True)
             
             self._mpv_process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=open(log_file, 'a')  # Log stderr for debugging
             )
+            
+            # Give mpv a moment to start
+            import time
+            time.sleep(0.5)
+            
+            # Check if process is still running
+            if self._mpv_process.poll() is not None:
+                # Process died immediately
+                error_msg = "mpv process exited immediately"
+                logger.error(f"Error starting playback: {error_msg}")
+                # Try to read error from log
+                if log_file.exists():
+                    with open(log_file, 'r') as f:
+                        error_log = f.read()
+                        if error_log:
+                            logger.error(f"mpv error log: {error_log[-500:]}")  # Last 500 chars
+                raise BackendError(f"Failed to start playback: {error_msg}")
             
             self.set_playing_state(True)
             self._is_paused = False

@@ -34,16 +34,22 @@ class ButtonHandler:
         self._setup_buttons()
     
     def _setup_buttons(self):
-        """Set up GPIO buttons with pull-up resistors and debouncing."""
+        """Set up GPIO buttons with pull-up resistors and debouncing.
+        
+        For normally open (NO) buttons that close to GND when pressed:
+        - pull_up=True: Use internal pull-up resistor (keeps pin HIGH when not pressed)
+        - When button is pressed: pin goes LOW (button connects GPIO to GND)
+        - gpiozero automatically detects LOW as "pressed" when pull_up=True
+        """
         try:
             for name, pin in self.pins.items():
                 button = Button(
                     pin,
-                    pull_up=True,
+                    pull_up=True,  # For NO buttons: HIGH when not pressed, LOW when pressed (closes to GND)
                     bounce_time=self.bounce_time
                 )
                 self.buttons[name] = button
-                logger.info(f"Configured button '{name}' on GPIO {pin}")
+                logger.info(f"Configured button '{name}' on GPIO {pin} (NO button, closes to GND when pressed)")
         except Exception as e:
             logger.error(f"Error setting up buttons: {e}")
             raise
@@ -66,11 +72,12 @@ class ButtonHandler:
         
         # Set new callback
         def wrapped_callback():
-            logger.debug(f"Button '{button_name}' pressed")
+            logger.info(f"Button '{button_name}' pressed - invoking callback")
             try:
                 callback()
+                logger.debug(f"Button '{button_name}' callback completed successfully")
             except Exception as e:
-                logger.error(f"Error in button callback for '{button_name}': {e}")
+                logger.error(f"Error in button callback for '{button_name}': {e}", exc_info=True)
         
         self.buttons[button_name].when_pressed = wrapped_callback
         self.callbacks[button_name] = callback

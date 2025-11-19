@@ -7,8 +7,16 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SOURCES_FILE = Path("/home/pi/music-player/sources.json")
-DEFAULT_STATE_FILE = Path("/home/pi/music-player/state.json")
+# Default paths - use current working directory if script is in music-player directory
+# Otherwise fall back to /home/pi/music-player for backwards compatibility
+_SCRIPT_DIR = Path(__file__).parent.absolute()
+if _SCRIPT_DIR.name == "music-player" or (_SCRIPT_DIR / "sources.json.example").exists():
+    _BASE_DIR = _SCRIPT_DIR
+else:
+    _BASE_DIR = Path("/home/pi/music-player")
+
+DEFAULT_SOURCES_FILE = _BASE_DIR / "sources.json"
+DEFAULT_STATE_FILE = _BASE_DIR / "state.json"
 
 
 class SourceManager:
@@ -19,6 +27,7 @@ class SourceManager:
         self.state_file = state_file or DEFAULT_STATE_FILE
         self._sources: List[Dict] = []
         self._current_index = 0
+        self._last_file_mtime = 0  # Track file modification time for hot-reload
         self._load_sources()
         self._load_state()
     
@@ -28,7 +37,14 @@ class SourceManager:
             if not self.sources_file.exists():
                 logger.warning(f"Sources file not found: {self.sources_file}")
                 self._sources = []
+                self._last_file_mtime = 0
                 return
+            
+            # Update modification time tracking
+            try:
+                self._last_file_mtime = self.sources_file.stat().st_mtime
+            except Exception:
+                self._last_file_mtime = 0
             
             with open(self.sources_file, 'r') as f:
                 self._sources = json.load(f)
@@ -46,6 +62,77 @@ class SourceManager:
         except Exception as e:
             logger.error(f"Error loading sources: {e}")
             self._sources = []
+    
+    def _has_file_changed(self) -> bool:
+        """Check if sources file has been modified since last load."""
+        try:
+            if not self.sources_file.exists():
+                return False
+            
+            current_mtime = self.sources_file.stat().st_mtime
+            return current_mtime > self._last_file_mtime
+        except Exception:
+            return False
+    
+    def reload_sources(self, preserve_current: bool = True) -> bool:
+        """
+        Reload sources from file if it has changed.
+        
+        Args:
+            preserve_current: If True, try to preserve current source after reload
+            
+        Returns:
+            True if sources were reloaded, False if no changes detected
+        """
+        if not self._has_file_changed():
+            return False
+        
+        # Save current source info before reload
+        current_source = None
+        current_source_id = None
+        if preserve_current and self._sources and 0 <= self._current_index < len(self._sources):
+            current_source = self._sources[self._current_index]
+            current_source_id = current_source.get('id')
+            logger.debug(f"Preserving current source: {current_source.get('label', current_source_id)}")
+        
+        # Reload sources
+        old_count = len(self._sources)
+        self._load_sources()
+        new_count = len(self._sources)
+        
+        if old_count != new_count:
+            logger.info(f"Sources reloaded: {old_count} -> {new_count} sources")
+        else:
+            logger.info(f"Sources reloaded: {new_count} sources (count unchanged)")
+        
+        # Try to restore current source if preserve_current is True
+        if preserve_current and current_source_id and self._sources:
+            # Find the source with the same ID
+            found_index = None
+            for i, source in enumerate(self._sources):
+                if source.get('id') == current_source_id:
+                    found_index = i
+                    break
+            
+            if found_index is not None:
+                self._current_index = found_index
+                logger.info(f"Preserved current source at index {found_index}: {self._sources[found_index].get('label', current_source_id)}")
+            else:
+                # Current source was removed, reset to first source
+                if self._sources:
+                    self._current_index = 0
+                    logger.warning(
+                        f"Current source '{current_source_id}' was removed from sources. "
+                        f"Switched to first source: {self._sources[0].get('label', 'unknown')}"
+                    )
+                else:
+                    self._current_index = 0
+                    logger.warning("All sources removed, reset to index 0")
+            
+            # Save updated state
+            self.save_state()
+        
+        return True
     
     def _load_state(self):
         """Load current state from JSON file."""
@@ -93,14 +180,25 @@ class SourceManager:
         """Get all configured sources."""
         return self._sources.copy()
     
-    def get_current_source(self) -> Optional[Dict]:
-        """Get the currently selected source."""
+    def get_current_source(self, check_for_changes: bool = False) -> Optional[Dict]:
+        """
+        Get the currently selected source.
+        
+        Args:
+            check_for_changes: If True, check for file changes and reload if needed
+        """
+        if check_for_changes:
+            self.reload_sources(preserve_current=True)
+        
         if not self._sources or self._current_index >= len(self._sources):
             return None
         return self._sources[self._current_index]
     
     def cycle_source(self) -> Dict:
         """Cycle to the next source and return it."""
+        # Check for file changes before cycling (hot-reload)
+        self.reload_sources(preserve_current=True)
+        
         if not self._sources:
             logger.warning("No sources configured")
             return None

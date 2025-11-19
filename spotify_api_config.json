@@ -1,0 +1,7 @@
+{
+  "client_id": "93a729141d0d4a8bab606d215545a0c0",
+  "client_secret": "d199d5445f8e45b8a86aa9d21fad34ff",
+  "refresh_token": "AQA5PyQuvgcjrF5A0ZgmPWdc9wQIcEo-NL-TST2wcymas98haK8zptqP8sKBWltDZwPAfHKUTpk1lbfkGKKy-o_zHyeS94FaSoAUMQPY6zUMhdkHeKUWM24V9KJjOIwrKDY",
+  "redirect_uri": "http://127.0.0.1:8888/callback",
+  "scope": "user-read-playback-state user-modify-playback-state user-read-currently-playing"
+}
