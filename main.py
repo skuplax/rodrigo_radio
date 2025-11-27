@@ -4,7 +4,7 @@ import sys
 import signal
 import logging
 from pathlib import Path
-from player_controller import PlayerController
+from core.player_controller import PlayerController
 
 # Configure logging - use script directory
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -14,7 +14,8 @@ LOG_FILE = LOG_DIR / "player.log"
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
     handlers=[
         logging.FileHandler(LOG_FILE),
         logging.StreamHandler(sys.stdout)
@@ -47,9 +48,9 @@ def main():
     
     try:
         # Initialize controller with paths relative to script directory
-        sources_file = SCRIPT_DIR / "sources.json"
-        state_file = SCRIPT_DIR / "state.json"
-        history_file = SCRIPT_DIR / "history.json"
+        sources_file = SCRIPT_DIR / "config" / "sources.json"
+        state_file = SCRIPT_DIR / "data" / "state.json"
+        history_file = SCRIPT_DIR / "data" / "history.json"
         
         # Optional: Configure rotary encoder pins
         # Set to None to disable rotary encoder

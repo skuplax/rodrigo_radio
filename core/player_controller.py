@@ -2,49 +2,20 @@
 import logging
 import time
 import threading
-import subprocess
 from typing import Optional
-from buttons import ButtonHandler
-from sources import SourceManager
-from playback_history import PlaybackHistory
+from hardware.buttons import ButtonHandler
+from core.sources import SourceManager
+from core.playback_history import PlaybackHistory
 from backends.youtube_backend import YouTubeBackend
 from backends.spotify_backend import SpotifyBackend
 from backends.base import BaseBackend, BackendError
-from rotary_encoder import RotaryEncoder
+from hardware.rotary_encoder import RotaryEncoder
+from utils.announcements import announce_source
 
 logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 2  # Skip to next source after 2 failed attempts
 RETRY_SLEEP = 2.0  # seconds
-
-
-def announce_source(source_label: str):
-    """
-    Announce the source name using text-to-speech.
-    
-    Args:
-        source_label: The label of the source to announce
-    """
-    try:
-        # Try espeak-ng first (most common on Raspberry Pi)
-        subprocess.Popen(
-            ['espeak-ng', '-s', '150', '-v', 'en', f'{source_label}'],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-        logger.info(f"Announced source: {source_label}")
-    except FileNotFoundError:
-        try:
-            # Fallback to espeak
-            subprocess.Popen(
-                ['espeak', '-s', '150', '-v', 'en', f'{source_label}'],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            logger.info(f"Announced source: {source_label}")
-        except FileNotFoundError:
-            # No TTS available, just log it
-            logger.debug(f"TTS not available, would announce: {source_label}")
 
 
 class PlayerController:
@@ -234,17 +205,7 @@ class PlayerController:
                 
                 if attempt < MAX_RETRIES:
                     logger.info(f"Retrying in {RETRY_SLEEP} seconds...")
-                    # Sleep in small increments to check for cancellation
-                    for _ in range(int(RETRY_SLEEP * 10)):  # Check 10 times per second
-                        if self._cancel_retry.is_set():
-                            logger.info(f"Retry cancelled during wait for {label}")
-                            return False
-                        # Also check if target source changed
-                        with self._lock:
-                            if self._target_source != source:
-                                logger.info(f"Target source changed during wait for {label}")
-                                return False
-                        time.sleep(0.1)
+                    time.sleep(RETRY_SLEEP)
                 else:
                     logger.error(f"Failed to play {label} after {MAX_RETRIES} attempts")
                     return False
@@ -301,7 +262,7 @@ class PlayerController:
             success = self._play_source_with_retry(source)
             
             if not success:
-                # Check if cancelled FIRST before trying next source
+                # Check if cancelled FIRST
                 if self._cancel_retry.is_set():
                     logger.info(f"Retry cancelled for {source.get('label')}, not trying next source")
                     return
@@ -312,18 +273,9 @@ class PlayerController:
                         logger.info(f"Source {source.get('label')} is no longer the target, not trying next source")
                         return
                 
-                # If failed and not cancelled, try next source
-                logger.warning(f"Failed to play {source.get('label')}, trying next source...")
-                with self._lock:
-                    next_source = self.source_manager.cycle_source()
-                if next_source and next_source != source:
-                    # Check if next_source is still the target
-                    if self._target_source == next_source:
-                        self._play_source_with_retry(next_source)
-                    else:
-                        logger.info(f"Next source {next_source.get('label')} is no longer the target")
-                else:
-                    logger.info("No next source available or same as current")
+                # If failed and not cancelled, just log the failure and stop
+                # Don't automatically try next source - let user manually cycle if they want
+                logger.warning(f"Failed to play {source.get('label')} after all retries. User can manually cycle to next source if desired.")
             else:
                 # Ensure old backend is fully stopped (double-check)
                 # But only if it's different from the new backend (same source = same backend instance)
@@ -493,6 +445,26 @@ class PlayerController:
         # Then try to switch to it
         self._switch_source(new_source)
     
+    def reload_sources(self) -> bool:
+        """
+        Manually reload sources from file if it has changed.
+        Does not disrupt current playback.
+        
+        Returns:
+            True if sources were reloaded, False if no changes
+        """
+        with self._lock:
+            was_reloaded = self.source_manager.reload_sources(preserve_current=True)
+            if was_reloaded:
+                # Update current_source reference if it changed
+                new_current = self.source_manager.get_current_source()
+                if new_current and (not self.current_source or 
+                                   new_current.get('id') != self.current_source.get('id')):
+                    logger.info("Current source reference updated after reload")
+                    # Note: We don't change current_source here to avoid disrupting playback
+                    # It will be updated on next cycle or when switching sources
+            return was_reloaded
+    
     def get_status(self) -> dict:
         """
         Get current player status.
@@ -501,6 +473,9 @@ class PlayerController:
             Dictionary with status information
         """
         with self._lock:
+            # Check for source changes (non-disruptive)
+            self.source_manager.reload_sources(preserve_current=True)
+            
             status = {
                 'playing': False,
                 'source': None,

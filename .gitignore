@@ -1,0 +1,61 @@
+# Spotify OAuth cache
+.spotify_cache
+
+# Sensitive configuration files (contain credentials/secrets)
+config/spotify_api_config.json
+config/sources.json
+
+# Runtime data files (state and history)
+data/
+
+# Log files
+logs/
+
+# Cache directories
+cache_directory/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# System files
+Thumbs.db

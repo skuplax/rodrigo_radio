@@ -99,7 +99,7 @@ If you prefer to install manually:
 
 4. **Make scripts executable**:
    ```bash
-   chmod +x /home/pi/music-player/player.py
+   chmod +x /home/pi/music-player/main.py
    chmod +x /home/pi/music-player/cli.py
    ```
 
@@ -141,7 +141,7 @@ To add volume control with a digital rotary encoder (e.g., KY-040):
    - **+** → 3.3V
    - **GND** → Ground
 
-2. **Software Configuration**: Edit `/home/skayflakes/music-player/player.py`:
+2. **Software Configuration**: Edit `/home/skayflakes/music-player/main.py`:
    ```python
    encoder_pins = {'clk': 5, 'dt': 6, 'sw': 13, 'volume_step': 2}
    ```
@@ -150,13 +150,42 @@ To add volume control with a digital rotary encoder (e.g., KY-040):
    - `sw`: GPIO pin for switch/button (optional, for mute toggle)
    - `volume_step`: Volume change per encoder step in percent (default: 2)
 
-3. **Test the encoder**: Before enabling in the service, test it:
+3. **Test the encoder**: Before enabling in the service, test it manually or check logs:
    ```bash
    sudo systemctl stop music-player.service
-   ./test_rotary_encoder.py
+   # Test by running the player and rotating the encoder
+   # Check logs: sudo journalctl -u music-player.service -f
    ```
 
 The encoder controls system audio volume using ALSA mixer (`amixer`). Rotate clockwise to increase volume, counter-clockwise to decrease. Press the switch (if connected) to toggle mute/unmute.
+
+### Source Announcements (Text-to-Speech)
+
+When cycling between sources, the player can announce the source name. The system tries multiple methods in order of quality:
+
+1. **Pre-recorded Audio Files** (Best Quality): Place audio files in the `announcements/` directory named after your source labels (e.g., `music_-_80s_love_songs.wav`). Supported formats: WAV, MP3, OGG.
+
+2. **Piper TTS** (High Quality, Local): Much better than espeak. Install with:
+   ```bash
+   pip3 install --user --break-system-packages piper-tts
+   ```
+   Models will be downloaded automatically on first use. This provides natural-sounding speech without internet.
+
+3. **espeak-ng/espeak** (Fallback): Basic TTS, already installed on most Raspberry Pi systems.
+
+**To use pre-recorded audio:**
+```bash
+mkdir -p /home/pi/music-player/announcements
+# Record or place your audio files here
+# Filename should match source label (spaces -> underscores, lowercase)
+# Example: "Music - 80s Love Songs" -> "music_-_80s_love_songs.wav"
+```
+
+**To use Piper TTS:**
+```bash
+pip3 install --user --break-system-packages piper-tts
+# First run will download a model (~50MB)
+```
 
 ### Sources Configuration
 
@@ -292,7 +321,7 @@ sudo systemctl status music-player.service
 
 ```
 /home/pi/music-player/
-├── player.py                 # Main daemon entry point
+├── main.py                   # Main daemon entry point
 ├── player_controller.py      # Main orchestrator
 ├── buttons.py                # GPIO button handling
 ├── sources.py                # Source configuration management

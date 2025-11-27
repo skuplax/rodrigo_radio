@@ -19,7 +19,12 @@ from pathlib import Path
 # Configuration
 SCOPE = "user-read-playback-state user-modify-playback-state user-read-currently-playing"
 REDIRECT_URI = "http://127.0.0.1:8888/callback"
-CONFIG_FILE = Path.home() / "music-player" / "spotify_api_config.json"
+# Try project directory first, then fall back to home directory for backwards compatibility
+_PROJECT_DIR = Path(__file__).parent.parent.absolute()
+if (_PROJECT_DIR / "config" / "spotify_api_config.json").exists() or (_PROJECT_DIR / "config" / "spotify_api_config.json.example").exists():
+    CONFIG_FILE = _PROJECT_DIR / "config" / "spotify_api_config.json"
+else:
+    CONFIG_FILE = Path.home() / "music-player" / "spotify_api_config.json"
 
 def get_credentials():
     """Get credentials from user input."""
@@ -65,12 +70,14 @@ def main():
     print("If browser doesn't open, visit the URL shown below.\n")
     
     # Create OAuth manager
+    # Cache path should be in project root, not config directory
+    cache_path = _PROJECT_DIR / ".spotify_cache" if _PROJECT_DIR.exists() else CONFIG_FILE.parent / ".spotify_cache"
     sp_oauth = SpotifyOAuth(
         client_id=client_id,
         client_secret=client_secret,
         redirect_uri=REDIRECT_URI,
         scope=SCOPE,
-        cache_path=str(CONFIG_FILE.parent / ".spotify_cache")
+        cache_path=str(cache_path)
     )
     
     # Get authorization URL

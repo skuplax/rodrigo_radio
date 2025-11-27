@@ -8,11 +8,12 @@ Type=simple
 User=skayflakes
 Group=skayflakes
 WorkingDirectory=/home/skayflakes/music-player
-ExecStart=/usr/bin/python3 /home/skayflakes/music-player/player.py
+ExecStart=/usr/bin/python3 /home/skayflakes/music-player/main.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
+SyslogIdentifier=music-player
 
 # Environment variables
 Environment="PYTHONUNBUFFERED=1"

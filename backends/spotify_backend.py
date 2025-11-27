@@ -24,7 +24,14 @@ from backends.base import BaseBackend, BackendError
 logger = logging.getLogger(__name__)
 
 # Configuration file path
-CONFIG_FILE = Path.home() / "music-player" / "spotify_api_config.json"
+# Try project directory first, then fall back to home directory for backwards compatibility
+_PROJECT_DIR = Path(__file__).parent.parent.absolute()
+if (_PROJECT_DIR / "config" / "spotify_api_config.json").exists() or (_PROJECT_DIR / "config" / "spotify_api_config.json.example").exists():
+    CONFIG_FILE = _PROJECT_DIR / "config" / "spotify_api_config.json"
+    CACHE_DIR = _PROJECT_DIR  # Cache in project root
+else:
+    CONFIG_FILE = Path.home() / "music-player" / "spotify_api_config.json"
+    CACHE_DIR = Path.home() / "music-player"  # Cache in home directory
 
 
 class SpotifyBackend(BaseBackend):
@@ -83,7 +90,7 @@ class SpotifyBackend(BaseBackend):
                 client_secret=config['client_secret'],
                 redirect_uri=config.get('redirect_uri', 'http://127.0.0.1:8888/callback'),
                 scope=config.get('scope', 'user-read-playback-state user-modify-playback-state user-read-currently-playing'),
-                cache_path=str(CONFIG_FILE.parent / ".spotify_cache")
+                cache_path=str(CACHE_DIR / ".spotify_cache")
             )
             
             # Set refresh token if available
@@ -334,6 +341,8 @@ class SpotifyBackend(BaseBackend):
                 try:
                     self._spotify.pause_playback(device_id=self._device_id)
                     self._is_paused = True
+                    # Keep _is_playing = True (we have a track, just paused)
+                    # Don't set it to False, as that would indicate stopped, not paused
                     logger.info("Paused Spotify playback (Web API)")
                     return True
                 except Exception as e:
@@ -344,6 +353,7 @@ class SpotifyBackend(BaseBackend):
                 try:
                     self._mpris_player.Pause()
                     self._is_paused = True
+                    # Keep _is_playing = True (we have a track, just paused)
                     logger.info("Paused Spotify playback (MPRIS)")
                     return True
                 except Exception as e:
@@ -362,6 +372,7 @@ class SpotifyBackend(BaseBackend):
                 try:
                     self._spotify.start_playback(device_id=self._device_id)
                     self._is_paused = False
+                    self.set_playing_state(True)
                     logger.info("Resumed Spotify playback (Web API)")
                     return True
                 except Exception as e:
@@ -372,6 +383,7 @@ class SpotifyBackend(BaseBackend):
                 try:
                     self._mpris_player.Play()
                     self._is_paused = False
+                    self.set_playing_state(True)
                     logger.info("Resumed Spotify playback (MPRIS)")
                     return True
                 except Exception as e:
@@ -509,6 +521,11 @@ class SpotifyBackend(BaseBackend):
     def is_playing(self) -> bool:
         """Check if currently playing (and not paused)."""
         try:
+            # Check internal paused state first - if we're paused, return False immediately
+            # This prevents race conditions where API hasn't updated yet
+            if self._is_paused:
+                return False
+            
             # Try Web API first
             if self._spotify:
                 try:
@@ -516,7 +533,10 @@ class SpotifyBackend(BaseBackend):
                     if playback:
                         is_playing = playback.get('is_playing', False)
                         self.set_playing_state(is_playing)
-                        self._is_paused = not is_playing
+                        # Only update _is_paused if API says we're not playing
+                        # Don't overwrite if we just paused (API might be stale)
+                        if not is_playing:
+                            self._is_paused = True
                         return is_playing
                     else:
                         self.set_playing_state(False)
@@ -532,7 +552,9 @@ class SpotifyBackend(BaseBackend):
                     playback_status = props.Get('org.mpris.MediaPlayer2.Player', 'PlaybackStatus')
                     is_playing = (playback_status == 'Playing')
                     self.set_playing_state(is_playing)
-                    self._is_paused = not is_playing
+                    # Only update _is_paused if MPRIS says we're not playing
+                    if not is_playing:
+                        self._is_paused = True
                     return is_playing
                 except Exception:
                     pass  # Fall through to internal state

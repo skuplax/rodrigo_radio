@@ -6,12 +6,12 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
-from sources import SourceManager, DEFAULT_STATE_FILE
-from playback_history import PlaybackHistory, DEFAULT_HISTORY_FILE
+from core.sources import SourceManager, DEFAULT_STATE_FILE
+from core.playback_history import PlaybackHistory, DEFAULT_HISTORY_FILE
 
 # Try to import player controller for live status
 try:
-    from player_controller import PlayerController
+    from core.player_controller import PlayerController
     CONTROLLER_AVAILABLE = True
 except ImportError:
     CONTROLLER_AVAILABLE = False

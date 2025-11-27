@@ -126,7 +126,7 @@ main() {
 
     # Make scripts executable
     print_info "Making scripts executable..."
-    chmod +x player.py cli.py install.sh 2>/dev/null || true
+    chmod +x main.py cli.py install.sh 2>/dev/null || true
 
     # Create necessary directories
     print_info "Creating necessary directories..."
@@ -134,25 +134,35 @@ main() {
     mkdir -p ~/.config/spotifyd
     mkdir -p ~/.cache/spotifyd
 
+    # Create config directory if it doesn't exist
+    mkdir -p config
+    
     # Create sources.json if it doesn't exist
-    if [ ! -f sources.json ]; then
-        print_info "Creating sources.json from example..."
-        cp sources.json.example sources.json
-        print_warn "Please edit sources.json with your source configurations."
+    if [ ! -f config/sources.json ]; then
+        if [ -f config/sources.json.example ]; then
+            print_info "Creating sources.json from example..."
+            cp config/sources.json.example config/sources.json
+            print_warn "Please edit config/sources.json with your source configurations."
+        else
+            print_warn "sources.json.example not found in config/ directory"
+        fi
     else
-        print_info "sources.json already exists, skipping..."
+        print_info "config/sources.json already exists, skipping..."
     fi
 
     # Create spotifyd config if it doesn't exist
     if [ ! -f ~/.config/spotifyd/spotifyd.conf ]; then
-        if [ -f spotifyd.conf.example ]; then
+        if [ -f config/spotifyd.conf.example ]; then
             print_info "Creating spotifyd.conf from example..."
-            cp spotifyd.conf.example ~/.config/spotifyd/spotifyd.conf
+            cp config/spotifyd.conf.example ~/.config/spotifyd/spotifyd.conf
             print_warn "Please edit ~/.config/spotifyd/spotifyd.conf with your Spotify credentials."
         fi
     else
         print_info "spotifyd.conf already exists, skipping..."
     fi
+    
+    # Create data directory for runtime files
+    mkdir -p data
 
     # Install systemd service
     echo ""
@@ -213,7 +223,7 @@ main() {
     echo "=========================================="
     echo ""
     echo "Next steps:"
-    echo "1. Edit $TARGET_DIR/sources.json with your sources"
+    echo "1. Edit $TARGET_DIR/config/sources.json with your sources"
     if [ ! -f ~/.config/spotifyd/spotifyd.conf ] || grep -q "your_spotify_username" ~/.config/spotifyd/spotifyd.conf 2>/dev/null; then
         echo "2. Edit ~/.config/spotifyd/spotifyd.conf with your Spotify credentials (if using Spotify)"
     fi

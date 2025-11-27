@@ -298,6 +298,7 @@ class YouTubeBackend(BaseBackend):
             if self._mpv_process and self._mpv_process.poll() is None and self._is_paused:
                 self._mpv_process.send_signal(signal.SIGCONT)
                 self._is_paused = False
+                self.set_playing_state(True)
                 logger.info("Resumed YouTube playback")
                 return True
             return False

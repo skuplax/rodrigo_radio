@@ -10,13 +10,16 @@ logger = logging.getLogger(__name__)
 # Default paths - use current working directory if script is in music-player directory
 # Otherwise fall back to /home/pi/music-player for backwards compatibility
 _SCRIPT_DIR = Path(__file__).parent.absolute()
-if _SCRIPT_DIR.name == "music-player" or (_SCRIPT_DIR / "sources.json.example").exists():
+# If we're in a subdirectory (core/, hardware/, etc.), go up to project root
+if _SCRIPT_DIR.name in ("core", "hardware", "utils", "scripts", "backends"):
+    _BASE_DIR = _SCRIPT_DIR.parent
+elif _SCRIPT_DIR.name == "music-player" or (_SCRIPT_DIR / "config" / "sources.json.example").exists():
     _BASE_DIR = _SCRIPT_DIR
 else:
     _BASE_DIR = Path("/home/pi/music-player")
 
-DEFAULT_SOURCES_FILE = _BASE_DIR / "sources.json"
-DEFAULT_STATE_FILE = _BASE_DIR / "state.json"
+DEFAULT_SOURCES_FILE = _BASE_DIR / "config" / "sources.json"
+DEFAULT_STATE_FILE = _BASE_DIR / "data" / "state.json"
 
 
 class SourceManager:
