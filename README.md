@@ -48,7 +48,7 @@ pip3 install --user --break-system-packages gpiozero spotipy
 
 1. **Navigate to the project directory**:
    ```bash
-   cd /home/pi/music-player
+   cd /home/pi/rodrigo_radio
    ```
 
 2. **Install system packages** (run as root or with sudo):
@@ -71,7 +71,7 @@ pip3 install --user --break-system-packages gpiozero spotipy
 
 5. **Configure your sources**:
    ```bash
-   nano /home/pi/music-player/sources.json
+   nano /home/pi/rodrigo_radio/sources.json
    ```
    Edit the file with your Spotify playlist IDs and YouTube channel/playlist IDs.
 
@@ -95,18 +95,18 @@ If you prefer to install manually:
    pip3 install --user --break-system-packages gpiozero spotipy
    ```
 
-3. **Clone or copy this directory to `/home/pi/music-player`**
+3. **Clone or copy this directory to `/home/pi/rodrigo_radio`**
 
 4. **Make scripts executable**:
    ```bash
-   chmod +x /home/pi/music-player/main.py
-   chmod +x /home/pi/music-player/cli.py
+   chmod +x /home/pi/rodrigo_radio/main.py
+   chmod +x /home/pi/rodrigo_radio/cli.py
    ```
 
 5. **Configure sources**:
    ```bash
-   cp /home/pi/music-player/sources.json.example /home/pi/music-player/sources.json
-   nano /home/pi/music-player/sources.json
+   cp /home/pi/rodrigo_radio/sources.json.example /home/pi/rodrigo_radio/sources.json
+   nano /home/pi/rodrigo_radio/sources.json
    ```
 
 6. **Set up Spotify** (if using Spotify sources):
@@ -114,10 +114,10 @@ If you prefer to install manually:
 
 7. **Install systemd service**:
    ```bash
-   sudo cp /home/pi/music-player/music-player.service /etc/systemd/system/
+   sudo cp /home/pi/rodrigo_radio/rodrigo_radio.service /etc/systemd/system/
    sudo systemctl daemon-reload
-   sudo systemctl enable music-player.service
-   sudo systemctl start music-player.service
+   sudo systemctl enable rodrigo_radio.service
+   sudo systemctl start rodrigo_radio.service
    ```
 
 ## Configuration
@@ -141,7 +141,7 @@ To add volume control with a digital rotary encoder (e.g., KY-040):
    - **+** → 3.3V
    - **GND** → Ground
 
-2. **Software Configuration**: Edit `/home/skayflakes/music-player/main.py`:
+2. **Software Configuration**: Edit `/home/skayflakes/rodrigo_radio/main.py`:
    ```python
    encoder_pins = {'clk': 5, 'dt': 6, 'sw': 13, 'volume_step': 2}
    ```
@@ -152,9 +152,9 @@ To add volume control with a digital rotary encoder (e.g., KY-040):
 
 3. **Test the encoder**: Before enabling in the service, test it manually or check logs:
    ```bash
-   sudo systemctl stop music-player.service
+   sudo systemctl stop rodrigo_radio.service
    # Test by running the player and rotating the encoder
-   # Check logs: sudo journalctl -u music-player.service -f
+   # Check logs: sudo journalctl -u rodrigo_radio.service -f
    ```
 
 The encoder controls system audio volume using ALSA mixer (`amixer`). Rotate clockwise to increase volume, counter-clockwise to decrease. Press the switch (if connected) to toggle mute/unmute.
@@ -175,7 +175,7 @@ When cycling between sources, the player can announce the source name. The syste
 
 **To use pre-recorded audio:**
 ```bash
-mkdir -p /home/pi/music-player/announcements
+mkdir -p /home/pi/rodrigo_radio/announcements
 # Record or place your audio files here
 # Filename should match source label (spaces -> underscores, lowercase)
 # Example: "Music - 80s Love Songs" -> "music_-_80s_love_songs.wav"
@@ -189,7 +189,7 @@ pip3 install --user --break-system-packages piper-tts
 
 ### Sources Configuration
 
-Edit `/home/pi/music-player/sources.json`:
+Edit `/home/pi/rodrigo_radio/sources.json`:
 
 - **Spotify Playlist**: Requires `playlist_id` (full URI or just ID)
 - **YouTube Channel**: Requires `channel_id` (starts with `UC`)
@@ -249,7 +249,7 @@ To enable programmatic control, you need to set up OAuth authentication:
 
 2. **Run the OAuth Setup Script**:
    ```bash
-   cd /home/pi/music-player
+   cd /home/pi/rodrigo_radio
    python3 spotify_oauth_setup.py
    ```
    
@@ -273,35 +273,35 @@ The CLI tool provides status and history monitoring:
 
 ```bash
 # Show current status
-python3 /home/pi/music-player/cli.py status
+python3 /home/pi/rodrigo_radio/cli.py status
 
 # Show live dashboard (refreshes every 2 seconds)
-python3 /home/pi/music-player/cli.py dashboard
+python3 /home/pi/rodrigo_radio/cli.py dashboard
 
 # Show playback history
-python3 /home/pi/music-player/cli.py history
+python3 /home/pi/rodrigo_radio/cli.py history
 
 # Show last 100 history entries
-python3 /home/pi/music-player/cli.py history -n 100
+python3 /home/pi/rodrigo_radio/cli.py history -n 100
 ```
 
 ### Service Management
 
 ```bash
 # Start service
-sudo systemctl start music-player.service
+sudo systemctl start rodrigo_radio.service
 
 # Stop service
-sudo systemctl stop music-player.service
+sudo systemctl stop rodrigo_radio.service
 
 # Restart service
-sudo systemctl restart music-player.service
+sudo systemctl restart rodrigo_radio.service
 
 # View logs
-sudo journalctl -u music-player.service -f
+sudo journalctl -u rodrigo_radio.service -f
 
 # Check status
-sudo systemctl status music-player.service
+sudo systemctl status rodrigo_radio.service
 ```
 
 ## Button Functions
@@ -320,7 +320,7 @@ sudo systemctl status music-player.service
 ## File Structure
 
 ```
-/home/pi/music-player/
+/home/pi/rodrigo_radio/
 ├── main.py                   # Main daemon entry point
 ├── player_controller.py      # Main orchestrator
 ├── buttons.py                # GPIO button handling
@@ -336,7 +336,7 @@ sudo systemctl status music-player.service
 ├── history.json             # Playback history (auto-generated)
 ├── logs/
 │   └── player.log           # Application logs
-└── music-player.service     # Systemd service file
+└── rodrigo_radio.service     # Systemd service file
 ```
 
 ## Troubleshooting
@@ -354,8 +354,8 @@ sudo systemctl status music-player.service
 - Check logs: `sudo journalctl -u raspotify -f`
 
 **If Spotify Web API authentication fails:**
-- Verify config file exists: `ls -la ~/music-player/spotify_api_config.json`
-- Re-run OAuth setup: `python3 ~/music-player/spotify_oauth_setup.py`
+- Verify config file exists: `ls -la ~/rodrigo_radio/spotify_api_config.json`
+- Re-run OAuth setup: `python3 ~/rodrigo_radio/spotify_oauth_setup.py`
 - Check that redirect URI matches in Spotify app settings: `http://127.0.0.1:8888/callback`
 
 **If device not found:**
@@ -376,7 +376,7 @@ sudo systemctl status music-player.service
 - Verify GPIO pins are correct
 - Check wiring (buttons should connect GPIO to GND when pressed)
 - Test GPIO: `gpio readall` (if installed)
-- Check logs: `sudo journalctl -u music-player.service -f`
+- Check logs: `sudo journalctl -u rodrigo_radio.service -f`
 
 ## License
 

@@ -12,8 +12,8 @@ NC='\033[0m' # No Color
 
 # Script directory and target directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET_DIR="/home/pi/music-player"
-SERVICE_FILE="music-player.service"
+TARGET_DIR="/home/pi/rodrigo_radio"
+SERVICE_FILE="rodrigo_radio.service"
 
 # Functions
 print_info() {
@@ -181,27 +181,27 @@ main() {
     
     # Ask if user wants to enable and start the service
     echo ""
-    read -p "Enable and start the music-player service now? (y/N) " -n 1 -r
+    read -p "Enable and start the rodrigo_radio service now? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        sudo systemctl enable music-player.service
+        sudo systemctl enable rodrigo_radio.service
         print_info "Service enabled to start on boot."
         
         read -p "Start the service now? (y/N) " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            sudo systemctl start music-player.service
+            sudo systemctl start rodrigo_radio.service
             sleep 2
-            if sudo systemctl is-active --quiet music-player.service; then
+            if sudo systemctl is-active --quiet rodrigo_radio.service; then
                 print_info "Service started successfully!"
             else
-                print_error "Service failed to start. Check logs with: sudo journalctl -u music-player.service -n 50"
+                print_error "Service failed to start. Check logs with: sudo journalctl -u rodrigo_radio.service -n 50"
             fi
         fi
     else
         print_info "Service installed but not enabled. Enable it later with:"
-        echo "  sudo systemctl enable music-player.service"
-        echo "  sudo systemctl start music-player.service"
+        echo "  sudo systemctl enable rodrigo_radio.service"
+        echo "  sudo systemctl start rodrigo_radio.service"
     fi
 
     # Check if spotifyd should be started
@@ -229,11 +229,11 @@ main() {
     fi
     echo ""
     echo "Service management:"
-    echo "  Start:   sudo systemctl start music-player.service"
-    echo "  Stop:    sudo systemctl stop music-player.service"
-    echo "  Restart: sudo systemctl restart music-player.service"
-    echo "  Status:  sudo systemctl status music-player.service"
-    echo "  Logs:    sudo journalctl -u music-player.service -f"
+    echo "  Start:   sudo systemctl start rodrigo_radio.service"
+    echo "  Stop:    sudo systemctl stop rodrigo_radio.service"
+    echo "  Restart: sudo systemctl restart rodrigo_radio.service"
+    echo "  Status:  sudo systemctl status rodrigo_radio.service"
+    echo "  Logs:    sudo journalctl -u rodrigo_radio.service -f"
     echo ""
     echo "CLI tool:"
     echo "  Status:  python3 $TARGET_DIR/cli.py status"

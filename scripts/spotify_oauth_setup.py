@@ -24,7 +24,7 @@ _PROJECT_DIR = Path(__file__).parent.parent.absolute()
 if (_PROJECT_DIR / "config" / "spotify_api_config.json").exists() or (_PROJECT_DIR / "config" / "spotify_api_config.json.example").exists():
     CONFIG_FILE = _PROJECT_DIR / "config" / "spotify_api_config.json"
 else:
-    CONFIG_FILE = Path.home() / "music-player" / "spotify_api_config.json"
+    CONFIG_FILE = Path.home() / "rodrigo_radio" / "spotify_api_config.json"
 
 def get_credentials():
     """Get credentials from user input."""

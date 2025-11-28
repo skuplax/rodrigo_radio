@@ -11,6 +11,15 @@ from backends.spotify_backend import SpotifyBackend
 from backends.base import BaseBackend, BackendError
 from hardware.rotary_encoder import RotaryEncoder
 from utils.announcements import announce_source
+from utils.sound_feedback import (
+    play_startup_beep,
+    play_connection_error_beep,
+    play_network_error_beep,
+    play_retry_beep,
+    play_no_sources_beep,
+    DelayedBeep,
+    play_fetching_beep
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +76,9 @@ class PlayerController:
         
         # Register button callbacks
         self._setup_buttons()
+        
+        # Play startup beep
+        play_startup_beep()
         
         # Auto-start playback if we have a current source
         self._auto_start()
@@ -130,77 +142,126 @@ class PlayerController:
         # Clear any previous cancel flag
         self._cancel_retry.clear()
         
-        for attempt in range(1, MAX_RETRIES + 1):
-            # Check if retry was cancelled (e.g., user pressed cycle source)
-            if self._cancel_retry.is_set():
-                logger.info(f"Retry cancelled for {label} (user requested new source)")
-                return False
-            
-            # Check if source is still the target
-            with self._lock:
-                if self._target_source != source:
-                    logger.info(f"Source {label} is no longer the target, cancelling retry")
-                    return False
-            
-            try:
-                # Get appropriate backend
-                backend = self._get_backend_for_source(source)
-                
-                # Prepare kwargs based on source type
-                kwargs = {'source_type': source_type}
-                
-                if source_type == 'spotify_playlist':
-                    kwargs['playlist_id'] = source.get('playlist_id')
-                    source_id_to_play = kwargs['playlist_id'] or source_id
-                elif source_type == 'youtube_channel':
-                    kwargs['channel_id'] = source.get('channel_id')
-                    source_id_to_play = kwargs['channel_id'] or source_id
-                elif source_type == 'youtube_playlist':
-                    kwargs['playlist_id'] = source.get('playlist_id')
-                    source_id_to_play = kwargs['playlist_id'] or source_id
-                else:
-                    logger.error(f"Unknown source type: {source_type}")
+        # Start delayed beep for fetching (only plays if operation takes >1s)
+        with DelayedBeep(play_fetching_beep, delay=1.0) as delayed_beep:
+            for attempt in range(1, MAX_RETRIES + 1):
+                # Check if retry was cancelled (e.g., user pressed cycle source)
+                if self._cancel_retry.is_set():
+                    logger.info(f"Retry cancelled for {label} (user requested new source)")
                     return False
                 
-                # Attempt to play
-                success = backend.play(source_id_to_play, **kwargs)
+                # Check if source is still the target
+                with self._lock:
+                    if self._target_source != source:
+                        logger.info(f"Source {label} is no longer the target, cancelling retry")
+                        return False
                 
-                if success:
-                    # Check again if this source is still the target before setting it
-                    with self._lock:
-                        if self._target_source != source:
-                            logger.info(f"Source {label} is no longer the target, stopping backend")
-                            try:
-                                backend.stop()
-                            except Exception as e:
-                                logger.warning(f"Error stopping cancelled backend: {e}")
-                            return False
+                try:
+                    # Get appropriate backend
+                    backend = self._get_backend_for_source(source)
+                    
+                    # Prepare kwargs based on source type
+                    kwargs = {'source_type': source_type}
+                    
+                    if source_type == 'spotify_playlist':
+                        kwargs['playlist_id'] = source.get('playlist_id')
+                        source_id_to_play = kwargs['playlist_id'] or source_id
+                    elif source_type == 'youtube_channel':
+                        kwargs['channel_id'] = source.get('channel_id')
+                        source_id_to_play = kwargs['channel_id'] or source_id
+                    elif source_type == 'youtube_playlist':
+                        kwargs['playlist_id'] = source.get('playlist_id')
+                        source_id_to_play = kwargs['playlist_id'] or source_id
+                    else:
+                        logger.error(f"Unknown source type: {source_type}")
+                        return False
+                    
+                    # Attempt to play
+                    success = backend.play(source_id_to_play, **kwargs)
+                    
+                    if success:
+                        # Check again if this source is still the target before setting it
+                        with self._lock:
+                            if self._target_source != source:
+                                logger.info(f"Source {label} is no longer the target, stopping backend")
+                                try:
+                                    backend.stop()
+                                except Exception as e:
+                                    logger.warning(f"Error stopping cancelled backend: {e}")
+                                return False
+                            
+                            # Stop old backend and set new one (need lock for this)
+                            old_backend = self.current_backend
+                            # Set new backend and source first
+                            self.current_backend = backend
+                            self.current_source = source
+                            self._target_source = None  # Clear target since we succeeded
+                            
+                            # Then stop old backend (after setting new one to avoid race condition)
+                            if old_backend and old_backend != backend:
+                                try:
+                                    old_backend.stop()
+                                except Exception as e:
+                                    logger.warning(f"Error stopping old backend: {e}")
                         
-                        # Stop old backend and set new one (need lock for this)
-                        old_backend = self.current_backend
-                        # Set new backend and source first
-                        self.current_backend = backend
-                        self.current_source = source
-                        self._target_source = None  # Clear target since we succeeded
+                        # Log playback start (outside lock to avoid blocking)
+                        item_name = backend.get_current_item()
+                        with self._lock:
+                            self.history.log_playback_start(source, item_name)
                         
-                        # Then stop old backend (after setting new one to avoid race condition)
-                        if old_backend and old_backend != backend:
-                            try:
-                                old_backend.stop()
-                            except Exception as e:
-                                logger.warning(f"Error stopping old backend: {e}")
+                        logger.info(f"Successfully started playback: {label}")
+                        # Cancel delayed beep since operation completed quickly
+                        delayed_beep.cancel()
+                        return True
+                    else:
+                        raise BackendError("Backend returned False")
+                        
+                except (BackendError, ConnectionError, TimeoutError) as e:
+                    # Cancel delayed beep since we're handling the error
+                    delayed_beep.cancel()
                     
-                    # Log playback start (outside lock to avoid blocking)
-                    item_name = backend.get_current_item()
-                    with self._lock:
-                        self.history.log_playback_start(source, item_name)
+                    # Determine error type and play appropriate beep
+                    error_str = str(e).lower()
+                    if 'network' in error_str or 'connection' in error_str or 'timeout' in error_str:
+                        play_network_error_beep()
+                    elif 'not found' in error_str or '404' in error_str:
+                        # Not found errors are handled by backends, but play connection error as fallback
+                        play_connection_error_beep()
+                    else:
+                        play_connection_error_beep()
                     
-                    logger.info(f"Successfully started playback: {label}")
-                    return True
-                else:
-                    raise BackendError("Backend returned False")
+                    logger.warning(f"Attempt {attempt}/{MAX_RETRIES} failed for {label}: {e}")
                     
-            except Exception as e:
+                    if attempt < MAX_RETRIES:
+                        logger.info(f"Retrying in {RETRY_SLEEP} seconds...")
+                        play_retry_beep()
+                        time.sleep(RETRY_SLEEP)
+                    else:
+                        logger.error(f"Failed to play {label} after {MAX_RETRIES} attempts")
+                        return False
+                except Exception as e:
+                    # Cancel delayed beep since we're handling the error
+                    delayed_beep.cancel()
+                    
+                    # Check if it's a network-related error
+                    error_str = str(e).lower()
+                    error_type = type(e).__name__.lower()
+                    
+                    if any(keyword in error_str or keyword in error_type for keyword in 
+                           ['network', 'connection', 'timeout', 'dns', 'socket', 'urlerror']):
+                        play_network_error_beep()
+                    else:
+                        play_connection_error_beep()
+                    
+                    logger.warning(f"Attempt {attempt}/{MAX_RETRIES} failed for {label}: {e}")
+                    
+                    if attempt < MAX_RETRIES:
+                        logger.info(f"Retrying in {RETRY_SLEEP} seconds...")
+                        play_retry_beep()
+                        time.sleep(RETRY_SLEEP)
+                    else:
+                        logger.error(f"Failed to play {label} after {MAX_RETRIES} attempts")
+                        return False
                 logger.warning(f"Attempt {attempt}/{MAX_RETRIES} failed for {label}: {e}")
                 
                 if attempt < MAX_RETRIES:
@@ -406,6 +467,7 @@ class PlayerController:
     
     def _on_cycle_source(self):
         """Handle cycle source button press."""
+        cycle_start = time.perf_counter()
         logger.info("Cycling to next source")
         # Cancel any ongoing retry attempts
         self._cancel_retry.set()
@@ -415,9 +477,12 @@ class PlayerController:
             self._target_source = None
         
         # Get next source first to check if it's the same
+        source_cycle_start = time.perf_counter()
         new_source = self.source_manager.cycle_source()
+        source_cycle_time = time.perf_counter() - source_cycle_start
         if not new_source:
             logger.warning("No sources available to cycle")
+            play_no_sources_beep()
             return
         
         # Check if new source is the same as current source
@@ -427,6 +492,7 @@ class PlayerController:
                             self.current_source.get('type') == new_source.get('type'))
         
         # Only stop current playback if switching to a different source
+        stop_start = time.perf_counter()
         if not is_same_source:
             with self._lock:
                 if self.current_backend:
@@ -437,13 +503,32 @@ class PlayerController:
                         logger.warning(f"Error stopping current backend: {e}")
         else:
             logger.info("Cycling to same source, not stopping current playback")
+        stop_time = time.perf_counter() - stop_start
         
         # Announce the source
+        announce_start = time.perf_counter()
         source_label = new_source.get('label', 'Unknown source')
         announce_source(source_label)
+        announce_time = time.perf_counter() - announce_start
         
         # Then try to switch to it
+        switch_start = time.perf_counter()
         self._switch_source(new_source)
+        switch_time = time.perf_counter() - switch_start
+        
+        # Benchmark logging
+        log_start = time.perf_counter()
+        total_cycle_time = time.perf_counter() - cycle_start
+        source_type = new_source.get('type', 'unknown')
+        if source_type == 'youtube_channel' or source_type == 'youtube_playlist':
+            logger.info(f"[BENCHMARK] YouTube cycle total: {total_cycle_time*1000:.2f}ms | "
+                       f"source_cycle: {source_cycle_time*1000:.2f}ms | "
+                       f"stop: {stop_time*1000:.2f}ms | "
+                       f"announce: {announce_time*1000:.2f}ms | "
+                       f"switch: {switch_time*1000:.2f}ms")
+        log_time = time.perf_counter() - log_start
+        if source_type == 'youtube_channel' or source_type == 'youtube_playlist':
+            logger.info(f"[BENCHMARK] Logging overhead: {log_time*1000:.2f}ms")
     
     def reload_sources(self) -> bool:
         """

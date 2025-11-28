@@ -7,16 +7,16 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-# Default paths - use current working directory if script is in music-player directory
-# Otherwise fall back to /home/pi/music-player for backwards compatibility
+# Default paths - use current working directory if script is in rodrigo_radio directory
+# Otherwise fall back to /home/pi/rodrigo_radio for backwards compatibility
 _SCRIPT_DIR = Path(__file__).parent.absolute()
 # If we're in a subdirectory (core/, hardware/, etc.), go up to project root
 if _SCRIPT_DIR.name in ("core", "hardware", "utils", "scripts", "backends"):
     _BASE_DIR = _SCRIPT_DIR.parent
-elif _SCRIPT_DIR.name == "music-player" or (_SCRIPT_DIR / "config" / "sources.json.example").exists():
+elif _SCRIPT_DIR.name == "rodrigo_radio" or (_SCRIPT_DIR / "config" / "sources.json.example").exists():
     _BASE_DIR = _SCRIPT_DIR
 else:
-    _BASE_DIR = Path("/home/pi/music-player")
+    _BASE_DIR = Path("/home/pi/rodrigo_radio")
 
 DEFAULT_HISTORY_FILE = _BASE_DIR / "data" / "history.json"
 MAX_HISTORY_ENTRIES = 1000  # Keep last 1000 entries

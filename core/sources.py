@@ -1,22 +1,23 @@
 """Source configuration and state management."""
 import json
 import logging
+import threading
 from pathlib import Path
 from typing import List, Dict, Optional
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-# Default paths - use current working directory if script is in music-player directory
-# Otherwise fall back to /home/pi/music-player for backwards compatibility
+# Default paths - use current working directory if script is in rodrigo_radio directory
+# Otherwise fall back to /home/pi/rodrigo_radio for backwards compatibility
 _SCRIPT_DIR = Path(__file__).parent.absolute()
 # If we're in a subdirectory (core/, hardware/, etc.), go up to project root
 if _SCRIPT_DIR.name in ("core", "hardware", "utils", "scripts", "backends"):
     _BASE_DIR = _SCRIPT_DIR.parent
-elif _SCRIPT_DIR.name == "music-player" or (_SCRIPT_DIR / "config" / "sources.json.example").exists():
+elif _SCRIPT_DIR.name == "rodrigo_radio" or (_SCRIPT_DIR / "config" / "sources.json.example").exists():
     _BASE_DIR = _SCRIPT_DIR
 else:
-    _BASE_DIR = Path("/home/pi/music-player")
+    _BASE_DIR = Path("/home/pi/rodrigo_radio")
 
 DEFAULT_SOURCES_FILE = _BASE_DIR / "config" / "sources.json"
 DEFAULT_STATE_FILE = _BASE_DIR / "data" / "state.json"
@@ -33,6 +34,8 @@ class SourceManager:
         self._last_file_mtime = 0  # Track file modification time for hot-reload
         self._load_sources()
         self._load_state()
+        # Generate announcement cache files in background
+        self.ensure_announcement_cache()
     
     def _load_sources(self):
         """Load sources from JSON file."""
@@ -135,6 +138,9 @@ class SourceManager:
             # Save updated state
             self.save_state()
         
+        # Generate announcement cache files for any new sources in background
+        self.ensure_announcement_cache()
+        
         return True
     
     def _load_state(self):
@@ -216,4 +222,45 @@ class SourceManager:
     def get_source_count(self) -> int:
         """Get the number of configured sources."""
         return len(self._sources)
+    
+    def ensure_announcement_cache(self):
+        """
+        Ensure cached TTS audio files exist for all source labels.
+        Generates missing cache files in a background thread.
+        """
+        if not self._sources:
+            return
+        
+        def _generate_cache():
+            """Background thread function to generate cache files."""
+            try:
+                from utils.announcements import generate_cached_audio, ensure_cache_directory, get_cache_path
+                
+                ensure_cache_directory()
+                missing_count = 0
+                cached_count = 0
+                
+                for source in self._sources:
+                    source_label = source.get('label', source.get('id', 'Unknown source'))
+                    cache_path = get_cache_path(source_label)
+                    
+                    if cache_path.exists() and cache_path.stat().st_size > 0:
+                        cached_count += 1
+                    else:
+                        missing_count += 1
+                        if generate_cached_audio(source_label):
+                            cached_count += 1
+                        else:
+                            logger.debug(f"Could not generate cache for: {source_label}")
+                
+                if missing_count > 0:
+                    logger.info(f"Generated {cached_count - (len(self._sources) - missing_count)} new announcement cache files")
+                else:
+                    logger.debug(f"All {cached_count} announcement cache files already exist")
+            except Exception as e:
+                logger.warning(f"Error generating announcement cache: {e}")
+        
+        # Run cache generation in background thread
+        cache_thread = threading.Thread(target=_generate_cache, daemon=True)
+        cache_thread.start()
 

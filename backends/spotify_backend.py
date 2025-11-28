@@ -20,6 +20,12 @@ except ImportError:
     DBUS_AVAILABLE = False
 
 from backends.base import BaseBackend, BackendError
+from utils.sound_feedback import (
+    play_auth_error_beep,
+    play_not_found_beep,
+    play_device_error_beep,
+    play_network_error_beep
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +36,8 @@ if (_PROJECT_DIR / "config" / "spotify_api_config.json").exists() or (_PROJECT_D
     CONFIG_FILE = _PROJECT_DIR / "config" / "spotify_api_config.json"
     CACHE_DIR = _PROJECT_DIR  # Cache in project root
 else:
-    CONFIG_FILE = Path.home() / "music-player" / "spotify_api_config.json"
-    CACHE_DIR = Path.home() / "music-player"  # Cache in home directory
+    CONFIG_FILE = Path.home() / "rodrigo_radio" / "spotify_api_config.json"
+    CACHE_DIR = Path.home() / "rodrigo_radio"  # Cache in home directory
 
 
 class SpotifyBackend(BaseBackend):
@@ -84,23 +90,50 @@ class SpotifyBackend(BaseBackend):
         try:
             config = self._load_config()
             
+            cache_path = CACHE_DIR / ".spotify_cache"
+            
             # Create OAuth manager
             auth_manager = SpotifyOAuth(
                 client_id=config['client_id'],
                 client_secret=config['client_secret'],
                 redirect_uri=config.get('redirect_uri', 'http://127.0.0.1:8888/callback'),
                 scope=config.get('scope', 'user-read-playback-state user-modify-playback-state user-read-currently-playing'),
-                cache_path=str(CACHE_DIR / ".spotify_cache")
+                cache_path=str(cache_path)
             )
             
-            # Set refresh token if available
-            if 'refresh_token' in config:
-                auth_manager.refresh_token = config['refresh_token']
+            # Ensure cache file has the refresh token from config
+            # This handles cases where cache is missing or has stale data
+            cached_token = auth_manager.get_cached_token()
+            if not cached_token or 'refresh_token' not in cached_token:
+                # Cache doesn't have refresh token, initialize it from config
+                if 'refresh_token' in config:
+                    token_data = {
+                        'refresh_token': config['refresh_token'],
+                        'scope': config.get('scope', 'user-read-playback-state user-modify-playback-state user-read-currently-playing')
+                    }
+                    # Write to cache file so spotipy can use it
+                    cache_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(cache_path, 'w') as f:
+                        json.dump(token_data, f)
+                    logger.info("Initialized cache file with refresh token from config")
+            elif cached_token.get('refresh_token') != config.get('refresh_token'):
+                # Cache has different refresh token, update it
+                cached_token['refresh_token'] = config['refresh_token']
+                with open(cache_path, 'w') as f:
+                    json.dump(cached_token, f)
+                logger.info("Updated cache file with refresh token from config")
             
             # Create Spotify client
             self._spotify = spotipy.Spotify(auth_manager=auth_manager)
             
-            logger.info("Initialized Spotify Web API client")
+            # Test authentication by making a simple API call
+            try:
+                self._spotify.current_user()
+                logger.info("Initialized Spotify Web API client - authentication verified")
+            except Exception as auth_error:
+                logger.warning(f"Authentication test failed: {auth_error}. Token may need refresh.")
+                # The auth_manager should handle refresh automatically on next API call
+                
         except Exception as e:
             logger.error(f"Failed to initialize Spotify client: {e}")
             raise BackendError(f"Failed to initialize Spotify client: {e}")
@@ -159,12 +192,25 @@ class SpotifyBackend(BaseBackend):
             if not self._spotify:
                 return None
             
-            devices = self._spotify.devices()
+            try:
+                devices = self._spotify.devices()
+            except spotipy.exceptions.SpotifyException as e:
+                if e.http_status == 401:
+                    logger.warning("Received 401 Unauthorized while finding device - attempting token refresh...")
+                    try:
+                        self._init_spotify()
+                        devices = self._spotify.devices()
+                    except Exception as refresh_error:
+                        logger.error(f"Failed to refresh token: {refresh_error}")
+                        return None
+                else:
+                    raise
+            
             device_list = devices.get('devices', [])
             
             # Look for device with name containing raspotify-related keywords
-            # Common names: "raspotify", "Raspberry Pi", "raspberry", "librespot", etc.
-            keywords = ['raspotify', 'raspberry', 'librespot', 'pi']
+            # Common names: "raspotify", "Raspberry Pi", "raspberry", "librespot", "Rodrigo's Radio", etc.
+            keywords = ['raspotify', 'raspberry', 'librespot', 'pi', "rodrigo's radio", 'rodrigo radio']
             for device in device_list:
                 name = device.get('name', '').lower()
                 if any(keyword in name for keyword in keywords):
@@ -240,6 +286,7 @@ class SpotifyBackend(BaseBackend):
                 )
                 return True  # Allow operation with MPRIS fallback
             
+            play_device_error_beep()
             raise BackendError(
                 "Raspotify device not found in Spotify API and MPRIS fallback unavailable. "
                 "Raspotify is running, but it needs to be 'activated' first:\n"
@@ -303,7 +350,28 @@ class SpotifyBackend(BaseBackend):
                 
                 return True
             except spotipy.exceptions.SpotifyException as e:
-                if e.http_status == 404:
+                if e.http_status == 401:
+                    # Token expired or invalid - try to refresh
+                    logger.warning("Received 401 Unauthorized - token may be expired, attempting refresh...")
+                    try:
+                        # Reinitialize Spotify client to trigger token refresh
+                        self._init_spotify()
+                        # Retry playback
+                        self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
+                        logger.info(f"Started playback after token refresh: {uri}")
+                        self.set_playing_state(True)
+                        self._is_paused = False
+                        time.sleep(1)
+                        self._update_current_item()
+                        return True
+                    except Exception as refresh_error:
+                        play_auth_error_beep()
+                        raise BackendError(
+                            f"Authentication failed and token refresh unsuccessful: {refresh_error}. "
+                            "You may need to run spotify_oauth_setup.py again to re-authenticate."
+                        )
+                elif e.http_status == 404:
+                    play_not_found_beep()
                     raise BackendError(f"Playlist/album/track not found: {uri}")
                 elif e.http_status == 403:
                     raise BackendError("Permission denied. Make sure your Spotify account has Premium.")
@@ -329,6 +397,17 @@ class SpotifyBackend(BaseBackend):
         except BackendError:
             raise
         except Exception as e:
+            # Check if it's a network-related error
+            error_str = str(e).lower()
+            error_type = type(e).__name__.lower()
+            
+            if any(keyword in error_str or keyword in error_type for keyword in 
+                   ['network', 'connection', 'timeout', 'dns', 'socket', 'urlerror', 'requests']):
+                play_network_error_beep()
+            else:
+                # For other errors, play connection error (handled by player_controller)
+                pass
+            
             logger.error(f"Error in play(): {e}")
             self.set_playing_state(False)
             raise BackendError(f"Failed to start playback: {e}")
@@ -345,6 +424,19 @@ class SpotifyBackend(BaseBackend):
                     # Don't set it to False, as that would indicate stopped, not paused
                     logger.info("Paused Spotify playback (Web API)")
                     return True
+                except spotipy.exceptions.SpotifyException as e:
+                    if e.http_status == 401:
+                        logger.debug("Received 401 Unauthorized during pause - attempting token refresh...")
+                        try:
+                            self._init_spotify()
+                            self._spotify.pause_playback(device_id=self._device_id)
+                            self._is_paused = True
+                            logger.info("Paused Spotify playback (Web API) after token refresh")
+                            return True
+                        except Exception:
+                            logger.debug("Web API pause failed after token refresh, trying MPRIS fallback")
+                    else:
+                        logger.debug(f"Web API pause failed: {e}, trying MPRIS fallback")
                 except Exception as e:
                     logger.debug(f"Web API pause failed: {e}, trying MPRIS fallback")
             
@@ -375,6 +467,20 @@ class SpotifyBackend(BaseBackend):
                     self.set_playing_state(True)
                     logger.info("Resumed Spotify playback (Web API)")
                     return True
+                except spotipy.exceptions.SpotifyException as e:
+                    if e.http_status == 401:
+                        logger.debug("Received 401 Unauthorized during resume - attempting token refresh...")
+                        try:
+                            self._init_spotify()
+                            self._spotify.start_playback(device_id=self._device_id)
+                            self._is_paused = False
+                            self.set_playing_state(True)
+                            logger.info("Resumed Spotify playback (Web API) after token refresh")
+                            return True
+                        except Exception:
+                            logger.debug("Web API resume failed after token refresh, trying MPRIS fallback")
+                    else:
+                        logger.debug(f"Web API resume failed: {e}, trying MPRIS fallback")
                 except Exception as e:
                     logger.debug(f"Web API resume failed: {e}, trying MPRIS fallback")
             
@@ -403,8 +509,20 @@ class SpotifyBackend(BaseBackend):
             try:
                 self._ensure_device()
                 # Pause playback to stop it
-                self._spotify.pause_playback(device_id=self._device_id)
-                logger.info("Paused Spotify playback (stop)")
+                try:
+                    self._spotify.pause_playback(device_id=self._device_id)
+                    logger.info("Paused Spotify playback (stop)")
+                except spotipy.exceptions.SpotifyException as e:
+                    if e.http_status == 401:
+                        logger.debug("Received 401 Unauthorized during stop pause - attempting token refresh...")
+                        try:
+                            self._init_spotify()
+                            self._spotify.pause_playback(device_id=self._device_id)
+                            logger.info("Paused Spotify playback (stop) after token refresh")
+                        except Exception:
+                            logger.debug("Could not pause during stop after token refresh")
+                    else:
+                        raise
                 
                 # Wait a moment and verify it's actually stopped
                 time.sleep(0.2)
@@ -422,6 +540,16 @@ class SpotifyBackend(BaseBackend):
                         playback = self._spotify.current_playback()
                         if playback and playback.get('is_playing', False):
                             logger.error("Spotify still playing after multiple stop attempts!")
+                except spotipy.exceptions.SpotifyException as e:
+                    if e.http_status == 401:
+                        logger.debug("Received 401 Unauthorized during stop - token may need refresh")
+                        # Try to refresh and continue
+                        try:
+                            self._init_spotify()
+                        except Exception:
+                            pass  # Continue anyway
+                    else:
+                        logger.debug(f"Could not verify stop status: {e}")
                 except Exception as e:
                     logger.debug(f"Could not verify stop status: {e}")
                     
@@ -450,6 +578,20 @@ class SpotifyBackend(BaseBackend):
                     time.sleep(0.5)
                     self._update_current_item()
                     return True
+                except spotipy.exceptions.SpotifyException as e:
+                    if e.http_status == 401:
+                        logger.debug("Received 401 Unauthorized during next - attempting token refresh...")
+                        try:
+                            self._init_spotify()
+                            self._spotify.next_track(device_id=self._device_id)
+                            logger.info("Skipped to next track (Web API) after token refresh")
+                            time.sleep(0.5)
+                            self._update_current_item()
+                            return True
+                        except Exception:
+                            logger.debug("Web API next failed after token refresh, trying MPRIS fallback")
+                    else:
+                        logger.debug(f"Web API next failed: {e}, trying MPRIS fallback")
                 except Exception as e:
                     logger.debug(f"Web API next failed: {e}, trying MPRIS fallback")
             
@@ -480,6 +622,20 @@ class SpotifyBackend(BaseBackend):
                     time.sleep(0.5)
                     self._update_current_item()
                     return True
+                except spotipy.exceptions.SpotifyException as e:
+                    if e.http_status == 401:
+                        logger.debug("Received 401 Unauthorized during previous - attempting token refresh...")
+                        try:
+                            self._init_spotify()
+                            self._spotify.previous_track(device_id=self._device_id)
+                            logger.info("Went to previous track (Web API) after token refresh")
+                            time.sleep(0.5)
+                            self._update_current_item()
+                            return True
+                        except Exception:
+                            logger.debug("Web API previous failed after token refresh, trying MPRIS fallback")
+                    else:
+                        logger.debug(f"Web API previous failed: {e}, trying MPRIS fallback")
                 except Exception as e:
                     logger.debug(f"Web API previous failed: {e}, trying MPRIS fallback")
             
@@ -505,7 +661,21 @@ class SpotifyBackend(BaseBackend):
             if not self._spotify:
                 return
             
-            playback = self._spotify.current_playback()
+            try:
+                playback = self._spotify.current_playback()
+            except spotipy.exceptions.SpotifyException as e:
+                if e.http_status == 401:
+                    logger.debug("Received 401 Unauthorized while updating current item - attempting token refresh...")
+                    try:
+                        self._init_spotify()
+                        playback = self._spotify.current_playback()
+                    except Exception:
+                        # If refresh fails, just skip updating current item
+                        return
+                else:
+                    # For other errors, just skip updating
+                    return
+            
             if playback and playback.get('item'):
                 item = playback['item']
                 title = item.get('name', 'Unknown')
@@ -541,6 +711,26 @@ class SpotifyBackend(BaseBackend):
                     else:
                         self.set_playing_state(False)
                         return False
+                except spotipy.exceptions.SpotifyException as e:
+                    if e.http_status == 401:
+                        logger.debug("Received 401 Unauthorized while checking playback state - attempting token refresh...")
+                        try:
+                            self._init_spotify()
+                            # Retry once after refresh
+                            playback = self._spotify.current_playback()
+                            if playback:
+                                is_playing = playback.get('is_playing', False)
+                                self.set_playing_state(is_playing)
+                                if not is_playing:
+                                    self._is_paused = True
+                                return is_playing
+                            else:
+                                self.set_playing_state(False)
+                                return False
+                        except Exception:
+                            pass  # Fall through to MPRIS
+                    else:
+                        pass  # Fall through to MPRIS
                 except Exception:
                     pass  # Fall through to MPRIS
             

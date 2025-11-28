@@ -7,13 +7,13 @@ Wants=network-online.target
 Type=simple
 User=skayflakes
 Group=skayflakes
-WorkingDirectory=/home/skayflakes/music-player
-ExecStart=/usr/bin/python3 /home/skayflakes/music-player/main.py
+WorkingDirectory=/home/skayflakes/rodrigo_radio
+ExecStart=/usr/bin/python3 /home/skayflakes/rodrigo_radio/main.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=music-player
+SyslogIdentifier=rodrigo_radio
 
 # Environment variables
 Environment="PYTHONUNBUFFERED=1"
