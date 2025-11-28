@@ -179,6 +179,43 @@ class SpotifyBackend(BaseBackend):
         except Exception:
             return False
     
+    def _start_raspotify_service(self) -> bool:
+        """
+        Attempt to start the raspotify service.
+        
+        Returns:
+            True if service was started successfully, False otherwise
+        """
+        try:
+            logger.info("Attempting to start raspotify service...")
+            result = subprocess.run(
+                ['sudo', 'systemctl', 'start', 'raspotify'],
+                timeout=5,
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                # Give the service a moment to start
+                time.sleep(1)
+                if self._check_raspotify_running():
+                    logger.info("Successfully started raspotify service")
+                    return True
+                else:
+                    logger.warning("raspotify service start command succeeded but service is not active")
+                    return False
+            else:
+                logger.warning(f"Failed to start raspotify service: {result.stderr}")
+                return False
+        except subprocess.TimeoutExpired:
+            logger.warning("Timeout while starting raspotify service")
+            return False
+        except FileNotFoundError:
+            logger.warning("sudo or systemctl not found - cannot start raspotify service")
+            return False
+        except Exception as e:
+            logger.warning(f"Error starting raspotify service: {e}")
+            return False
+    
     def _find_raspotify_device(self, retry: bool = True) -> Optional[str]:
         """
         Find the raspotify device ID with automatic activation.
@@ -276,7 +313,9 @@ class SpotifyBackend(BaseBackend):
         
         if not self._device_id:
             if not self._check_raspotify_running():
-                raise BackendError("raspotify service is not running. Start it with: sudo systemctl start raspotify")
+                # Try to start the service automatically
+                if not self._start_raspotify_service():
+                    raise BackendError("raspotify service is not running and could not be started automatically. Start it manually with: sudo systemctl start raspotify")
             
             # If MPRIS is available, we can still control playback (but not start playlists)
             if self._mpris_player:
@@ -380,7 +419,9 @@ class SpotifyBackend(BaseBackend):
         """
         try:
             if not self._check_raspotify_running():
-                raise BackendError("raspotify service is not running")
+                # Try to start the service automatically
+                if not self._start_raspotify_service():
+                    raise BackendError("raspotify service is not running and could not be started automatically. Start it manually with: sudo systemctl start raspotify")
             
             if not self._spotify:
                 raise BackendError("Spotify client not initialized")
