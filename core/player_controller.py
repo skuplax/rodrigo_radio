@@ -2,6 +2,7 @@
 import logging
 import time
 import threading
+import socket
 from typing import Optional
 from hardware.buttons import ButtonHandler
 from core.sources import SourceManager
@@ -25,6 +26,8 @@ logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 2  # Skip to next source after 2 failed attempts
 RETRY_SLEEP = 2.0  # seconds
+NETWORK_CHECK_TIMEOUT = 30  # Maximum seconds to wait for network on startup
+NETWORK_CHECK_INTERVAL = 1.0  # Seconds between network connectivity checks
 
 
 class PlayerController:
@@ -262,14 +265,6 @@ class PlayerController:
                     else:
                         logger.error(f"Failed to play {label} after {MAX_RETRIES} attempts")
                         return False
-                logger.warning(f"Attempt {attempt}/{MAX_RETRIES} failed for {label}: {e}")
-                
-                if attempt < MAX_RETRIES:
-                    logger.info(f"Retrying in {RETRY_SLEEP} seconds...")
-                    time.sleep(RETRY_SLEEP)
-                else:
-                    logger.error(f"Failed to play {label} after {MAX_RETRIES} attempts")
-                    return False
         
         return False
     
@@ -368,10 +363,61 @@ class PlayerController:
             self._active_retry_thread = thread
         thread.start()
     
+    def _check_network_connectivity(self) -> bool:
+        """
+        Check if network connectivity is available by attempting DNS resolution.
+        
+        Returns:
+            True if network appears to be available, False otherwise
+        """
+        try:
+            # Try to resolve a well-known domain name (tests DNS resolution)
+            socket.gethostbyname('google.com')
+            return True
+        except (socket.gaierror, OSError):
+            return False
+    
+    def _wait_for_network(self, timeout: float = NETWORK_CHECK_TIMEOUT) -> bool:
+        """
+        Wait for network connectivity to become available.
+        
+        Args:
+            timeout: Maximum seconds to wait
+            
+        Returns:
+            True if network became available, False if timeout
+        """
+        start_time = time.time()
+        logger.info("Waiting for network connectivity before auto-start...")
+        
+        while time.time() - start_time < timeout:
+            if self._check_network_connectivity():
+                elapsed = time.time() - start_time
+                logger.info(f"Network connectivity available after {elapsed:.1f} seconds")
+                return True
+            time.sleep(NETWORK_CHECK_INTERVAL)
+        
+        logger.warning(f"Network connectivity check timed out after {timeout} seconds")
+        return False
+    
     def _auto_start(self):
         """Auto-start playback on initialization if we have a current source."""
         current_source = self.source_manager.get_current_source()
         if current_source:
+            # Check if source requires network (YouTube or Spotify)
+            source_type = current_source.get('type', '')
+            requires_network = source_type in ('youtube_channel', 'youtube_playlist', 'spotify_playlist')
+            
+            if requires_network:
+                # Wait for network before auto-starting
+                if not self._wait_for_network():
+                    logger.warning("Network not available, skipping auto-start. User can manually start playback.")
+                    return
+            
+            # Announce the source before starting
+            source_label = current_source.get('label', 'Unknown source')
+            announce_source(source_label)
+            
             logger.info("Auto-starting playback from saved state")
             self._switch_source(current_source)
         else:

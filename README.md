@@ -34,6 +34,8 @@ sudo apt install -y \
     python3-pip
 ```
 
+**Note:** yt-dlp is required for mpv to play YouTube URLs (mpv uses it internally). However, we use fast RSS feeds (~100-200ms) for channel video discovery instead of calling yt-dlp directly (which took 5-11 seconds).
+
 **Note:** `raspotify` is required for Spotify sources. It will be installed automatically (see Spotify Setup section below).
 
 ### Python Packages
@@ -84,6 +86,8 @@ If you prefer to install manually:
    sudo apt update
    sudo apt install -y yt-dlp mpv python3-gpiozero python3-pip
    ```
+   
+   **Note:** yt-dlp is required for mpv to play YouTube URLs (mpv uses it internally). We use RSS feeds for fast channel video discovery instead of calling yt-dlp directly.
 
 2. **Install raspotify** (for Spotify support):
    ```bash
@@ -193,7 +197,11 @@ Edit `/home/pi/rodrigo_radio/sources.json`:
 
 - **Spotify Playlist**: Requires `playlist_id` (full URI or just ID)
 - **YouTube Channel**: Requires `channel_id` (starts with `UC`)
+  - Uses RSS feeds for fast video discovery
+  - Automatically advances to next video when current ends
+  - Seamlessly checks for live streams in background
 - **YouTube Playlist**: Requires `playlist_id` (starts with `PL`)
+  - Note: Playlists still require yt-dlp (playlists don't have easy RSS access)
 
 ### Audio Output
 
@@ -369,8 +377,11 @@ sudo systemctl status rodrigo_radio.service
 - Review logs: `sudo journalctl -u raspotify -f`
 
 ### YouTube playback issues
-- Verify yt-dlp is up to date: `sudo apt update && sudo apt upgrade yt-dlp`
-- Test manually: `yt-dlp --get-url "https://www.youtube.com/watch?v=VIDEO_ID"`
+- **Channels:** Uses RSS feeds for fast video discovery (~100-200ms vs 5-11 seconds with yt-dlp)
+- **Auto-advance:** Videos automatically advance to the next video when current ends
+- **Playlists:** Still requires yt-dlp (playlists don't have easy RSS access)
+- If channel RSS feed fails, check network connectivity
+- Test RSS feed manually: `curl "https://www.youtube.com/feeds/videos.xml?channel_id=CHANNEL_ID"`
 
 ### Buttons not responding
 - Verify GPIO pins are correct

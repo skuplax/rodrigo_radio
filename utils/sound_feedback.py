@@ -5,6 +5,7 @@ import struct
 import subprocess
 import tempfile
 import threading
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -260,6 +261,100 @@ def play_no_sources_beep():
     wav_data = _generate_beep_wav(250, 0.4)
     _play_wav_data(wav_data)
     logger.debug("Played no sources beep")
+
+
+class PulsingBeep:
+    """
+    Plays a pulsing beep sound continuously until stopped.
+    Useful for indicating loading/fetching operations.
+    """
+    
+    def __init__(self, frequency: float = 300.0, pulse_duration: float = 0.3, 
+                 pause_duration: float = 0.3, volume: float = 0.5, tail_duration: float = 3.0):
+        """
+        Initialize pulsing beep.
+        
+        Args:
+            frequency: Frequency in Hz (default: 300Hz)
+            pulse_duration: Duration of each pulse in seconds (default: 0.3s)
+            pause_duration: Duration of pause between pulses in seconds (default: 0.3s)
+            volume: Volume level (0.0 to 1.0, default: 0.5 for 50% - louder than other beeps)
+            tail_duration: Duration to continue pulsing after stop() is called (default: 3.0s)
+        """
+        self.frequency = frequency
+        self.pulse_duration = pulse_duration
+        self.pause_duration = pause_duration
+        self.volume = volume
+        self.tail_duration = tail_duration
+        self._active = False
+        self._thread: threading.Thread = None
+        self._stop_event = threading.Event()
+        self._stop_requested = False
+        self._stop_time = None
+    
+    def start(self):
+        """Start the pulsing beep in a background thread."""
+        if self._active:
+            return  # Already running
+        
+        self._active = True
+        self._stop_requested = False
+        self._stop_event.clear()
+        self._stop_time = None
+        self._thread = threading.Thread(target=self._pulse_loop, daemon=True)
+        self._thread.start()
+        logger.info("Started pulsing beep")  # Changed to info for visibility
+    
+    def stop(self):
+        """Request stop of the pulsing beep (will continue for tail_duration)."""
+        if not self._active:
+            return
+        
+        self._stop_requested = True
+        self._stop_time = time.time()
+        logger.debug(f"Stop requested for pulsing beep, will continue for {self.tail_duration}s tail")
+    
+    def _force_stop(self):
+        """Force immediate stop of the pulsing beep."""
+        self._active = False
+        self._stop_requested = True
+        self._stop_event.set()
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=1.0)  # Wait up to 1 second for thread to finish
+        logger.info("Force stopped pulsing beep")
+    
+    def _pulse_loop(self):
+        """Internal method that runs the pulsing loop."""
+        pulse_count = 0
+        while self._active and not self._stop_event.is_set():
+            # Check if stop was requested and tail duration has elapsed
+            if self._stop_requested and self._stop_time:
+                elapsed = time.time() - self._stop_time
+                if elapsed >= self.tail_duration:
+                    # Tail duration elapsed, actually stop
+                    self._active = False
+                    logger.info(f"Pulsing beep tail completed after {elapsed:.1f}s, stopping (played {pulse_count} pulses)")
+                    break
+            
+            # Generate and play one pulse
+            pulse_count += 1
+            wav_data = _generate_beep_wav(self.frequency, self.pulse_duration, self.volume)
+            _play_wav_data(wav_data)
+            logger.debug(f"Playing pulse #{pulse_count} (freq={self.frequency}Hz, vol={self.volume})")
+            
+            # Wait for pause duration (or until stopped)
+            if self._stop_event.wait(self.pause_duration):
+                break  # Stop was requested
+    
+    def __enter__(self):
+        """Context manager entry - start pulsing."""
+        self.start()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - stop pulsing."""
+        self.stop()
+        return False  # Don't suppress exceptions
 
 
 class DelayedBeep:

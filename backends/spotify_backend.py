@@ -1,6 +1,7 @@
 """Spotify playback backend using raspotify and Spotify Web API."""
 import json
 import logging
+import random
 import subprocess
 import time
 from pathlib import Path
@@ -312,6 +313,62 @@ class SpotifyBackend(BaseBackend):
             # Assume playlist if no type specified
             return f"spotify:playlist:{source_id}"
     
+    def _get_track_count(self, uri: str) -> Optional[int]:
+        """
+        Get the total number of tracks in a playlist or album.
+        
+        Args:
+            uri: Spotify URI (playlist, album, or track)
+            
+        Returns:
+            Number of tracks, or None if unable to determine
+        """
+        try:
+            if not self._spotify:
+                return None
+            
+            # Extract type and ID from URI
+            if not uri.startswith('spotify:'):
+                return None
+            
+            parts = uri.split(':')
+            if len(parts) < 3:
+                return None
+            
+            uri_type = parts[1]  # 'playlist', 'album', 'track'
+            uri_id = parts[2]
+            
+            if uri_type == 'track':
+                # Single track, return 1
+                return 1
+            elif uri_type == 'playlist':
+                # Get playlist tracks count
+                try:
+                    # Use playlist_tracks with limit=1 to get total count efficiently
+                    result = self._spotify.playlist_tracks(uri_id, limit=1)
+                    total = result.get('total', 0)
+                    return total if total > 0 else None
+                except Exception as e:
+                    logger.debug(f"Could not get playlist track count: {e}")
+                    return None
+            elif uri_type == 'album':
+                # Get album tracks count
+                try:
+                    album = self._spotify.album(uri_id)
+                    tracks = album.get('tracks', {})
+                    if isinstance(tracks, dict):
+                        total = tracks.get('total', 0)
+                        return total if total > 0 else None
+                    return None
+                except Exception as e:
+                    logger.debug(f"Could not get album track count: {e}")
+                    return None
+            else:
+                return None
+        except Exception as e:
+            logger.debug(f"Error getting track count: {e}")
+            return None
+    
     def play(self, source_id: str, **kwargs) -> bool:
         """
         Start playing a Spotify playlist, album, or track.
@@ -336,10 +393,36 @@ class SpotifyBackend(BaseBackend):
             # Ensure we have a device (with automatic activation retries)
             self._ensure_device(retry=True)
             
+            # Get track count and pick a random starting position for shuffle
+            track_count = self._get_track_count(uri)
+            random_offset = None
+            if track_count and track_count > 1:
+                # Pick a random track index (0-based)
+                random_offset = random.randint(0, track_count - 1)
+                logger.info(f"Starting playback from random track {random_offset + 1} of {track_count}")
+            
             # Start playback
             try:
-                self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
-                logger.info(f"Started playback: {uri}")
+                if random_offset is not None:
+                    # Start from random position
+                    self._spotify.start_playback(
+                        device_id=self._device_id,
+                        context_uri=uri,
+                        offset={'position': random_offset}
+                    )
+                    logger.info(f"Started playback from random position: {uri}")
+                else:
+                    # Start from beginning (single track or couldn't get count)
+                    self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
+                    logger.info(f"Started playback: {uri}")
+                
+                # Enable shuffle mode
+                try:
+                    self._spotify.shuffle(state=True, device_id=self._device_id)
+                    logger.info("Shuffle mode enabled")
+                except Exception as shuffle_error:
+                    logger.warning(f"Could not enable shuffle mode: {shuffle_error}")
+                    # Continue anyway - playback started successfully
                 
                 self.set_playing_state(True)
                 self._is_paused = False
@@ -356,9 +439,33 @@ class SpotifyBackend(BaseBackend):
                     try:
                         # Reinitialize Spotify client to trigger token refresh
                         self._init_spotify()
+                        
+                        # Get track count and pick a random starting position for shuffle
+                        track_count = self._get_track_count(uri)
+                        random_offset = None
+                        if track_count and track_count > 1:
+                            random_offset = random.randint(0, track_count - 1)
+                            logger.info(f"Starting playback from random track {random_offset + 1} of {track_count} (after refresh)")
+                        
                         # Retry playback
-                        self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
-                        logger.info(f"Started playback after token refresh: {uri}")
+                        if random_offset is not None:
+                            self._spotify.start_playback(
+                                device_id=self._device_id,
+                                context_uri=uri,
+                                offset={'position': random_offset}
+                            )
+                            logger.info(f"Started playback from random position after token refresh: {uri}")
+                        else:
+                            self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
+                            logger.info(f"Started playback after token refresh: {uri}")
+                        
+                        # Enable shuffle mode
+                        try:
+                            self._spotify.shuffle(state=True, device_id=self._device_id)
+                            logger.info("Shuffle mode enabled after token refresh")
+                        except Exception as shuffle_error:
+                            logger.warning(f"Could not enable shuffle mode: {shuffle_error}")
+                        
                         self.set_playing_state(True)
                         self._is_paused = False
                         time.sleep(1)
@@ -382,8 +489,31 @@ class SpotifyBackend(BaseBackend):
                     self._ensure_device(retry=True)
                     # Retry playback once
                     try:
-                        self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
-                        logger.info(f"Started playback after reactivation: {uri}")
+                        # Get track count and pick a random starting position for shuffle
+                        track_count = self._get_track_count(uri)
+                        random_offset = None
+                        if track_count and track_count > 1:
+                            random_offset = random.randint(0, track_count - 1)
+                            logger.info(f"Starting playback from random track {random_offset + 1} of {track_count} (after reactivation)")
+                        
+                        if random_offset is not None:
+                            self._spotify.start_playback(
+                                device_id=self._device_id,
+                                context_uri=uri,
+                                offset={'position': random_offset}
+                            )
+                            logger.info(f"Started playback from random position after reactivation: {uri}")
+                        else:
+                            self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
+                            logger.info(f"Started playback after reactivation: {uri}")
+                        
+                        # Enable shuffle mode
+                        try:
+                            self._spotify.shuffle(state=True, device_id=self._device_id)
+                            logger.info("Shuffle mode enabled after reactivation")
+                        except Exception as shuffle_error:
+                            logger.warning(f"Could not enable shuffle mode: {shuffle_error}")
+                        
                         self.set_playing_state(True)
                         self._is_paused = False
                         time.sleep(1)

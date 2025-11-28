@@ -51,6 +51,9 @@ main() {
         
         # Install required packages
         print_info "Installing required packages..."
+        # Note: yt-dlp is needed for mpv to play YouTube URLs (mpv uses it internally)
+        # We use RSS feeds for fast channel video discovery instead of calling yt-dlp directly
+        # yt-dlp is also still needed for YouTube playlists
         apt install -y \
             yt-dlp \
             mpv \
