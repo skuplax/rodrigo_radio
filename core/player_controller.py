@@ -33,7 +33,7 @@ NETWORK_CHECK_INTERVAL = 1.0  # Seconds between network connectivity checks
 class PlayerController:
     """Main controller for the music player."""
     
-    def __init__(self, sources_file=None, state_file=None, history_file=None, 
+    def __init__(self, sources_file=None, state_file=None, 
                  button_pins=None, encoder_pins=None):
         """
         Initialize the player controller.
@@ -41,12 +41,11 @@ class PlayerController:
         Args:
             sources_file: Path to sources.json (optional)
             state_file: Path to state.json (optional)
-            history_file: Path to history.json (optional)
             button_pins: Dictionary of button pins (optional)
             encoder_pins: Dictionary with 'clk', 'dt', and optionally 'sw' pins for rotary encoder (optional)
         """
         self.source_manager = SourceManager(sources_file, state_file)
-        self.history = PlaybackHistory(history_file)
+        self.history = PlaybackHistory()
         self.button_handler = ButtonHandler(button_pins)
         
         self.current_backend: Optional[BaseBackend] = None
@@ -68,7 +67,10 @@ class PlayerController:
                     clk_pin=encoder_pins.get('clk'),
                     dt_pin=encoder_pins.get('dt'),
                     sw_pin=encoder_pins.get('sw'),
-                    volume_step=encoder_pins.get('volume_step', 2)
+                    volume_step=encoder_pins.get('volume_step', 2),
+                    time_limit_day_db=encoder_pins.get('time_limit_day_db', 0.0),
+                    time_limit_evening_db=encoder_pins.get('time_limit_evening_db', -7.0),
+                    time_limit_night_db=encoder_pins.get('time_limit_night_db', -14.0)
                 )
                 # Set up callbacks for volume changes
                 self.rotary_encoder.on_volume_change = self._on_volume_change
@@ -200,6 +202,9 @@ class PlayerController:
                             self.current_source = source
                             self._target_source = None  # Clear target since we succeeded
                             
+                            # Set up callback for when playback ends naturally (e.g., playlist finished)
+                            backend.set_on_playback_ended_callback(self._on_playback_ended)
+                            
                             # Then stop old backend (after setting new one to avoid race condition)
                             if old_backend and old_backend != backend:
                                 try:
@@ -213,6 +218,10 @@ class PlayerController:
                             self.history.log_playback_start(source, item_name)
                         
                         logger.info(f"Successfully started playback: {label}")
+                        # Log successful connection
+                        self.history.log_network_event('connection_success', status='success',
+                                                      source_id=source.get('id'),
+                                                      source_label=label)
                         # Cancel delayed beep since operation completed quickly
                         delayed_beep.cancel()
                         return True
@@ -235,11 +244,22 @@ class PlayerController:
                     
                     logger.warning(f"Attempt {attempt}/{MAX_RETRIES} failed for {label}: {e}")
                     
+                    # Log network event
                     if attempt < MAX_RETRIES:
+                        self.history.log_network_event('retry_attempt', status='retry', 
+                                                      source_id=source.get('id'),
+                                                      source_label=label,
+                                                      attempt=attempt,
+                                                      error=str(e))
                         logger.info(f"Retrying in {RETRY_SLEEP} seconds...")
                         play_retry_beep()
                         time.sleep(RETRY_SLEEP)
                     else:
+                        self.history.log_network_event('connection_failure', status='failure',
+                                                      source_id=source.get('id'),
+                                                      source_label=label,
+                                                      attempts=MAX_RETRIES,
+                                                      error=str(e))
                         logger.error(f"Failed to play {label} after {MAX_RETRIES} attempts")
                         return False
                 except Exception as e:
@@ -250,21 +270,42 @@ class PlayerController:
                     error_str = str(e).lower()
                     error_type = type(e).__name__.lower()
                     
-                    if any(keyword in error_str or keyword in error_type for keyword in 
-                           ['network', 'connection', 'timeout', 'dns', 'socket', 'urlerror']):
+                    is_network_error = any(keyword in error_str or keyword in error_type for keyword in 
+                                          ['network', 'connection', 'timeout', 'dns', 'socket', 'urlerror'])
+                    if is_network_error:
                         play_network_error_beep()
                     else:
                         play_connection_error_beep()
                     
                     logger.warning(f"Attempt {attempt}/{MAX_RETRIES} failed for {label}: {e}")
                     
-                    if attempt < MAX_RETRIES:
-                        logger.info(f"Retrying in {RETRY_SLEEP} seconds...")
-                        play_retry_beep()
-                        time.sleep(RETRY_SLEEP)
+                    # Log network event
+                    if is_network_error:
+                        if attempt < MAX_RETRIES:
+                            self.history.log_network_event('retry_attempt', status='retry',
+                                                          source_id=source.get('id'),
+                                                          source_label=label,
+                                                          attempt=attempt,
+                                                          error=str(e))
+                            logger.info(f"Retrying in {RETRY_SLEEP} seconds...")
+                            play_retry_beep()
+                            time.sleep(RETRY_SLEEP)
+                        else:
+                            self.history.log_network_event('connection_failure', status='failure',
+                                                          source_id=source.get('id'),
+                                                          source_label=label,
+                                                          attempts=MAX_RETRIES,
+                                                          error=str(e))
+                            logger.error(f"Failed to play {label} after {MAX_RETRIES} attempts")
+                            return False
                     else:
-                        logger.error(f"Failed to play {label} after {MAX_RETRIES} attempts")
-                        return False
+                        if attempt < MAX_RETRIES:
+                            logger.info(f"Retrying in {RETRY_SLEEP} seconds...")
+                            play_retry_beep()
+                            time.sleep(RETRY_SLEEP)
+                        else:
+                            logger.error(f"Failed to play {label} after {MAX_RETRIES} attempts")
+                            return False
         
         return False
     
@@ -445,7 +486,8 @@ class PlayerController:
                     # Pause
                     logger.info("Attempting to pause playback")
                     if self.current_backend.pause():
-                        self.history.log_action('pause')
+                        self.history.log_user_input('button_play_pause', source=self.current_source, action='pause')
+                        self.history.log_action('pause')  # Keep for backward compatibility
                         logger.info("Playback paused")
                     else:
                         logger.warning("Pause command returned False")
@@ -453,7 +495,8 @@ class PlayerController:
                     # Resume or start
                     logger.info("Attempting to resume playback")
                     if self.current_backend.resume():
-                        self.history.log_action('resume')
+                        self.history.log_user_input('button_play_pause', source=self.current_source, action='resume')
+                        self.history.log_action('resume')  # Keep for backward compatibility
                         logger.info("Playback resumed")
                     else:
                         logger.warning("Resume command returned False, trying to restart source")
@@ -472,7 +515,8 @@ class PlayerController:
                 return
             
             if self.current_backend.previous():
-                self.history.log_action('previous')
+                self.history.log_user_input('button_previous', source=self.current_source)
+                self.history.log_action('previous')  # Keep for backward compatibility
                 # Update current item in history
                 item_name = self.current_backend.get_current_item()
                 if item_name and self.current_source:
@@ -495,7 +539,8 @@ class PlayerController:
                 return
             
             if self.current_backend.next():
-                self.history.log_action('next')
+                self.history.log_user_input('button_next', source=self.current_source)
+                self.history.log_action('next')  # Keep for backward compatibility
                 # Update current item in history
                 item_name = self.current_backend.get_current_item()
                 if item_name and self.current_source:
@@ -523,6 +568,7 @@ class PlayerController:
             self._target_source = None
         
         # Get next source first to check if it's the same
+        new_source = None
         source_cycle_start = time.perf_counter()
         new_source = self.source_manager.cycle_source()
         source_cycle_time = time.perf_counter() - source_cycle_start
@@ -530,6 +576,9 @@ class PlayerController:
             logger.warning("No sources available to cycle")
             play_no_sources_beep()
             return
+        
+        # Log user input
+        self.history.log_user_input('button_cycle_source', source=new_source)
         
         # Check if new source is the same as current source
         with self._lock:
@@ -587,6 +636,10 @@ class PlayerController:
         with self._lock:
             was_reloaded = self.source_manager.reload_sources(preserve_current=True)
             if was_reloaded:
+                # Log config event
+                source_count = self.source_manager.get_source_count()
+                self.history.log_config_event('sources_reloaded', source_count=source_count)
+                
                 # Update current_source reference if it changed
                 new_current = self.source_manager.get_current_source()
                 if new_current and (not self.current_source or 
@@ -633,18 +686,37 @@ class PlayerController:
     def _on_volume_change(self, volume: int):
         """Handle volume change from rotary encoder."""
         logger.info(f"Volume changed to {volume}%")
+        self.history.log_audio_event('volume_set', value=float(volume))
         # Could add TTS announcement here if desired
         # announce_volume(volume)
     
     def _on_mute_toggle(self):
         """Handle mute toggle from rotary encoder switch."""
         logger.info("Mute toggled")
+        # Determine mute state (would need to query volume controller)
+        self.history.log_user_input('encoder_switch_press', action='mute_toggle')
         # Could add TTS announcement here if desired
         # announce_mute_state()
+    
+    def _on_playback_ended(self):
+        """Handle callback when playback ends naturally (e.g., playlist finished)."""
+        logger.info("Playback ended naturally - cycling to next source")
+        # Cycle to next source in a separate thread to avoid blocking
+        def cycle_in_background():
+            # Small delay to ensure backend state is updated
+            time.sleep(0.5)
+            self._on_cycle_source()
+        
+        thread = threading.Thread(target=cycle_in_background, daemon=True)
+        thread.start()
     
     def shutdown(self):
         """Gracefully shutdown the controller."""
         logger.info("Shutting down player controller...")
+        
+        # Log shutdown event
+        self.history.log_config_event('shutdown')
+        
         with self._lock:
             if self.current_backend:
                 try:
@@ -670,6 +742,13 @@ class PlayerController:
                 self.rotary_encoder.close()
             except Exception as e:
                 logger.error(f"Error closing rotary encoder: {e}")
+        
+        # Close history logger to flush remaining entries
+        if self.history:
+            try:
+                self.history.close()
+            except Exception as e:
+                logger.error(f"Error closing history logger: {e}")
         
         logger.info("Player controller shutdown complete")
 

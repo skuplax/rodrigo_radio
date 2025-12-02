@@ -69,7 +69,9 @@ pip3 install --user --break-system-packages gpiozero spotipy
    - Install and optionally enable the systemd service
 
 4. **Set up Spotify** (if using Spotify sources):
-   See the "Spotify Setup" section below for detailed instructions.
+   - The install script will prompt you to set up Spotify Web API authentication
+   - You can skip this and set it up later if needed
+   - See the "Spotify Setup" section below for detailed instructions
 
 5. **Configure your sources**:
    ```bash
@@ -246,8 +248,14 @@ sudo systemctl restart raspotify
 
 #### 2. Set Up Spotify Web API
 
-To enable programmatic control, you need to set up OAuth authentication:
+To enable programmatic control, you need to set up OAuth authentication. **The install script will prompt you to do this during installation**, but you can also set it up manually:
 
+**Option A: During Installation (Recommended)**
+- When running `./install.sh`, you'll be prompted: "Set up Spotify Web API authentication now? (y/N)"
+- If you choose yes, the OAuth setup script will run automatically
+- Make sure you have created a Spotify app first (see step 1 below)
+
+**Option B: Manual Setup**
 1. **Create a Spotify App**:
    - Go to https://developer.spotify.com/dashboard
    - Click "Create app"
@@ -258,15 +266,15 @@ To enable programmatic control, you need to set up OAuth authentication:
 2. **Run the OAuth Setup Script**:
    ```bash
    cd /home/pi/rodrigo_radio
-   python3 spotify_oauth_setup.py
+   python3 scripts/spotify_oauth_setup.py
    ```
    
    Follow the prompts:
    - Enter your Client ID and Client Secret
-   - Authorize the app in your browser
-   - Paste the redirect URL when prompted
+   - Authorize the app in your browser (the script will open it automatically)
+   - The script will capture the authorization callback automatically
    
-   The script will save your credentials to `spotify_api_config.json`.
+   The script will save your credentials to `config/spotify_api_config.json`.
 
 3. **Verify Setup**:
    The script will test the connection. If successful, you're ready to use Spotify sources!
@@ -362,8 +370,9 @@ sudo systemctl status rodrigo_radio.service
 - Check logs: `sudo journalctl -u raspotify -f`
 
 **If Spotify Web API authentication fails:**
-- Verify config file exists: `ls -la ~/rodrigo_radio/spotify_api_config.json`
-- Re-run OAuth setup: `python3 ~/rodrigo_radio/spotify_oauth_setup.py`
+- Verify config file exists: `ls -la ~/rodrigo_radio/config/spotify_api_config.json`
+- Re-run OAuth setup: `python3 ~/rodrigo_radio/scripts/spotify_oauth_setup.py`
+- Or re-run the install script and choose to set up Spotify when prompted
 - Check that redirect URI matches in Spotify app settings: `http://127.0.0.1:8888/callback`
 
 **If device not found:**

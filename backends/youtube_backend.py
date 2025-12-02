@@ -448,6 +448,62 @@ class YouTubeBackend(BaseBackend):
             logger.error(f"Error playing next video: {e}")
             return False
     
+    def _play_previous_video(self) -> bool:
+        """
+        Go back to previous video in queue.
+        
+        Returns:
+            True if previous video started successfully, False otherwise
+        """
+        if not self._current_channel_id:
+            return False
+        
+        try:
+            # Ensure we have a valid queue
+            if not self._video_queue:
+                logger.warning("No video queue available for previous")
+                return False
+            
+            # Decrement to previous video
+            self._current_video_index -= 1
+            
+            # Check if we've gone before the start of queue
+            if self._current_video_index < 0:
+                # Wrap to the end of the queue
+                self._current_video_index = len(self._video_queue) - 1
+                logger.info("Wrapped to end of queue for previous")
+            
+            # Get previous video
+            if 0 <= self._current_video_index < len(self._video_queue):
+                prev_video = self._video_queue[self._current_video_index]
+                video_url = prev_video['url']
+                video_title = prev_video.get('title', 'YouTube Audio')
+                
+                logger.info(f"Going to previous video: {video_title}")
+                
+                # Start pulsing beep to indicate loading previous video (50% volume, 3s tail)
+                self._pulsing_beep = PulsingBeep(frequency=300.0, pulse_duration=0.3, pause_duration=0.3, volume=0.5, tail_duration=3.0)
+                self._pulsing_beep.start()
+                logger.info("Started pulsing beep for previous video loading")
+                
+                try:
+                    # Start previous video
+                    self._start_playback(video_url, video_title)
+                    return True
+                except Exception as e:
+                    # Stop pulsing beep on error
+                    if self._pulsing_beep:
+                        self._pulsing_beep.stop()
+                        self._pulsing_beep = None
+                    raise
+            else:
+                logger.warning("Invalid video index for previous")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error playing previous video: {e}")
+            return False
+    
     def _monitor_playback(self):
         """
         Background thread to monitor mpv process and detect when video ends.
@@ -674,13 +730,13 @@ class YouTubeBackend(BaseBackend):
     
     def next(self) -> bool:
         """
-        Skip to next item.
-        For channels: get latest video again (or next in playlist if playing playlist)
+        Skip to next item in queue.
+        For channels: advance to next video in the video queue
         For playlists: advance to next item (not fully implemented, would need playlist tracking)
         """
-        # For now, restart current source
         if self._current_channel_id:
-            return self.play(self._current_channel_id, source_type='youtube_channel', channel_id=self._current_channel_id)
+            # Use the video queue to advance to next video
+            return self._play_next_video()
         elif self._current_playlist_id:
             # Playlist next would require tracking position
             logger.warning("Next track in playlist not fully implemented")
@@ -688,8 +744,17 @@ class YouTubeBackend(BaseBackend):
         return False
     
     def previous(self) -> bool:
-        """Go to previous item (not fully supported for YouTube)."""
-        logger.warning("Previous track not supported for YouTube")
+        """
+        Go to previous item in queue.
+        For channels: go back to previous video in the video queue
+        For playlists: not supported
+        """
+        if self._current_channel_id:
+            # Use the video queue to go to previous video
+            return self._play_previous_video()
+        elif self._current_playlist_id:
+            logger.warning("Previous track in playlist not supported")
+            return False
         return False
     
     def is_playing(self) -> bool:

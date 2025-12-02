@@ -3,6 +3,7 @@ import json
 import logging
 import random
 import subprocess
+import threading
 import time
 from pathlib import Path
 from typing import Optional
@@ -25,7 +26,8 @@ from utils.sound_feedback import (
     play_auth_error_beep,
     play_not_found_beep,
     play_device_error_beep,
-    play_network_error_beep
+    play_network_error_beep,
+    play_retry_beep
 )
 
 logger = logging.getLogger(__name__)
@@ -56,6 +58,9 @@ class SpotifyBackend(BaseBackend):
         self._device_activation_attempts = 0
         self._max_activation_attempts = 5  # Max attempts to activate device
         self._activation_retry_delay = 2.0  # Initial delay between activation attempts
+        self._monitoring_active = False
+        self._monitoring_thread: Optional[threading.Thread] = None
+        self._was_playing = False  # Track previous playing state to detect natural end
         
         if not SPOTIPY_AVAILABLE:
             raise BackendError("spotipy is not installed. Install it with: pip3 install --user --break-system-packages spotipy")
@@ -80,6 +85,9 @@ class SpotifyBackend(BaseBackend):
             if missing:
                 raise BackendError(f"Missing required config keys: {missing}")
             
+            # Store config for device lookup
+            self._config = config
+            
             return config
         except json.JSONDecodeError as e:
             raise BackendError(f"Invalid JSON in config file: {e}")
@@ -89,7 +97,7 @@ class SpotifyBackend(BaseBackend):
     def _init_spotify(self):
         """Initialize Spotify client with OAuth."""
         try:
-            config = self._load_config()
+            config = self._load_config()  # This already stores config in self._config
             
             cache_path = CACHE_DIR / ".spotify_cache"
             
@@ -170,14 +178,48 @@ class SpotifyBackend(BaseBackend):
     
     def _check_raspotify_running(self) -> bool:
         """Check if raspotify service is running."""
+        # Try systemctl first (most reliable if available)
         try:
             result = subprocess.run(
                 ['systemctl', 'is-active', '--quiet', 'raspotify'],
-                timeout=2
+                timeout=2,
+                capture_output=True,
+                check=False  # Don't raise on non-zero exit
             )
-            return result.returncode == 0
-        except Exception:
-            return False
+            if result.returncode == 0:
+                logger.debug("raspotify is running (checked via systemctl)")
+                return True
+            else:
+                logger.debug(f"systemctl check returned code {result.returncode}")
+        except subprocess.TimeoutExpired:
+            logger.debug("systemctl check timed out")
+        except FileNotFoundError:
+            logger.debug("systemctl not found, trying pgrep")
+        except Exception as e:
+            logger.debug(f"systemctl check failed: {e}")
+        
+        # Fallback: check if librespot process is running
+        try:
+            result = subprocess.run(
+                ['pgrep', '-f', 'librespot'],
+                timeout=2,
+                capture_output=True,
+                check=False  # Don't raise on non-zero exit
+            )
+            if result.returncode == 0:
+                logger.debug("raspotify is running (checked via pgrep)")
+                return True
+            else:
+                logger.debug("pgrep did not find librespot process")
+        except subprocess.TimeoutExpired:
+            logger.debug("pgrep check timed out")
+        except FileNotFoundError:
+            logger.debug("pgrep not found")
+        except Exception as e:
+            logger.debug(f"pgrep check failed: {e}")
+        
+        logger.debug("raspotify check: not running")
+        return False
     
     def _start_raspotify_service(self) -> bool:
         """
@@ -186,34 +228,89 @@ class SpotifyBackend(BaseBackend):
         Returns:
             True if service was started successfully, False otherwise
         """
+        # First check if it's already running
+        is_running = self._check_raspotify_running()
+        if is_running:
+            logger.debug("raspotify is already running, no need to start it")
+            return True
+        
+        # Double-check with a small delay in case of timing issues
+        logger.debug("First check said not running, double-checking...")
+        time.sleep(0.2)
+        is_running = self._check_raspotify_running()
+        if is_running:
+            logger.info("raspotify is running (verified on second check)")
+            return True
+        
+        logger.debug("Both checks confirmed raspotify is not running")
+        
         try:
             logger.info("Attempting to start raspotify service...")
             result = subprocess.run(
                 ['sudo', 'systemctl', 'start', 'raspotify'],
-                timeout=5,
+                timeout=10,  # Increased timeout in case sudo needs password
                 capture_output=True,
                 text=True
             )
             if result.returncode == 0:
-                # Give the service a moment to start
-                time.sleep(1)
+                # Give the service time to start and register with Spotify
+                # Raspotify needs time to: start process, connect to Spotify, register as device
+                logger.info("Waiting for raspotify to start and register with Spotify API...")
+                for i in range(5):  # Wait up to 5 seconds, checking every second
+                    time.sleep(1)
+                    if self._check_raspotify_running():
+                        logger.info(f"Successfully started raspotify service (verified after {i+1}s)")
+                        return True
+                # Final check
                 if self._check_raspotify_running():
-                    logger.info("Successfully started raspotify service")
+                    logger.info("Successfully started raspotify service (verified after 5s)")
                     return True
                 else:
-                    logger.warning("raspotify service start command succeeded but service is not active")
+                    logger.warning("raspotify service start command succeeded but service is not active after 5s")
                     return False
             else:
-                logger.warning(f"Failed to start raspotify service: {result.stderr}")
+                # Start command failed, but service might still be starting asynchronously
+                # or might have been triggered to start by systemd
+                error_msg = result.stderr or ''
+                logger.warning(f"raspotify start command failed (code {result.returncode}): {error_msg}")
+                logger.info("Checking if service starts anyway (may be starting asynchronously)...")
+                
+                # Wait and check if service becomes available anyway
+                # Sometimes systemd starts services asynchronously or they're already starting
+                for i in range(8):  # Wait up to 8 seconds, checking every second
+                    time.sleep(1)
+                    if self._check_raspotify_running():
+                        logger.info(f"raspotify service is running (verified after {i+1}s, despite start command failure)")
+                        return True
+                
+                # Final check
+                if self._check_raspotify_running():
+                    logger.info("raspotify service is running (verified after 8s, despite start command failure)")
+                    return True
+                
+                # Check for specific errors that indicate we can't start it
+                if 'no new privileges' in error_msg.lower():
+                    logger.debug(
+                        "Cannot start raspotify service (no new privileges flag set). "
+                        "Service may need to be started manually or may already be running."
+                    )
                 return False
         except subprocess.TimeoutExpired:
             logger.warning("Timeout while starting raspotify service")
             return False
         except FileNotFoundError:
-            logger.warning("sudo or systemctl not found - cannot start raspotify service")
+            logger.debug("sudo or systemctl not found - cannot start raspotify service")
             return False
         except Exception as e:
-            logger.warning(f"Error starting raspotify service: {e}")
+            # Check if it's a privilege-related error
+            error_str = str(e).lower()
+            if 'no new privileges' in error_str or 'privilege' in error_str:
+                logger.debug(
+                    f"Cannot start raspotify service due to privilege restrictions: {e}. "
+                    "Service may need to be started manually."
+                )
+            else:
+                logger.warning(f"Error starting raspotify service: {e}")
             return False
     
     def _find_raspotify_device(self, retry: bool = True) -> Optional[str]:
@@ -230,6 +327,32 @@ class SpotifyBackend(BaseBackend):
             if not self._spotify:
                 return None
             
+            # Check for manually configured device_id first
+            config = getattr(self, '_config', None)
+            if not config:
+                config = self._load_config()
+            configured_device_id = None
+            if config and config.get('device_id'):
+                device_id = config['device_id']
+                logger.info(f"Using manually configured device_id: {device_id}")
+                # Verify it's still available
+                try:
+                    devices = self._spotify.devices()
+                    device_list = devices.get('devices', [])
+                    for device in device_list:
+                        if device.get('id') == device_id:
+                            is_active = device.get('is_active', False)
+                            status = "ACTIVE" if is_active else "inactive"
+                            logger.info(f"Verified configured device: {device.get('name')} ({device_id}) - {status}")
+                            if not is_active:
+                                logger.debug("Device is inactive - will need to transfer playback before starting")
+                            return device_id
+                    logger.warning(f"Configured device_id {device_id} not found in available devices - will search by name/keywords instead")
+                    # Don't return None here - continue to search by name/keywords
+                except Exception as e:
+                    logger.warning(f"Could not verify configured device_id: {e}")
+                    # Continue searching by name/keywords
+            
             try:
                 devices = self._spotify.devices()
             except spotipy.exceptions.SpotifyException as e:
@@ -245,6 +368,17 @@ class SpotifyBackend(BaseBackend):
                     raise
             
             device_list = devices.get('devices', [])
+            
+            # Check for manually configured device_name
+            # Check this even if device_id was configured but not found (stale device_id)
+            if config.get('device_name'):
+                device_name_lower = config['device_name'].lower()
+                for device in device_list:
+                    if device.get('name', '').lower() == device_name_lower:
+                        device_id = device.get('id')
+                        if device_id:
+                            logger.info(f"Found device by configured name '{config['device_name']}': {device_id}")
+                            return device_id
             
             # Look for device with name containing raspotify-related keywords
             # Common names: "raspotify", "Raspberry Pi", "raspberry", "librespot", "Rodrigo's Radio", etc.
@@ -267,6 +401,7 @@ class SpotifyBackend(BaseBackend):
                         f"Raspotify device not found in API (attempt {self._device_activation_attempts}/{self._max_activation_attempts}). "
                         f"Raspotify is running - waiting {delay:.1f}s for it to register with Spotify..."
                     )
+                    play_retry_beep()
                     time.sleep(delay)
                     # Retry finding the device
                     return self._find_raspotify_device(retry=True)
@@ -277,13 +412,24 @@ class SpotifyBackend(BaseBackend):
                         "This may require manual activation from Spotify app on first use."
                     )
             
-            # If not found, log available devices for debugging
+            # If not found, log available devices at INFO level for debugging
             if device_list:
-                logger.debug("Raspotify device not found. Available devices:")
+                logger.info("Raspotify device not found. Available devices in Spotify API:")
                 for device in device_list:
-                    logger.debug(f"  - {device.get('name')} ({device.get('id')})")
+                    device_name = device.get('name', 'Unknown')
+                    device_id = device.get('id', 'Unknown')
+                    device_type = device.get('type', 'Unknown')
+                    is_active = device.get('is_active', False)
+                    status = "ACTIVE" if is_active else "inactive"
+                    logger.info(f"  - {device_name} ({device_type}) [{device_id}] - {status}")
+                logger.info("Tip: If your device is listed above, you can configure it manually in spotify_api_config.json:")
+                logger.info("  Add 'device_id': '<device_id>' or 'device_name': '<device_name>' to the config file")
             else:
-                logger.debug("No devices found in Spotify API")
+                logger.warning("No devices found in Spotify API. The device needs to be activated first:")
+                logger.warning("  1. Open Spotify app (mobile or desktop)")
+                logger.warning("  2. Look for your Raspberry Pi device in the device list")
+                logger.warning("  3. Connect to it (play something on it)")
+                logger.warning("  4. Once connected, it will appear in the API")
             
             return None
         except Exception as e:
@@ -311,33 +457,127 @@ class SpotifyBackend(BaseBackend):
             self._device_id = self._find_raspotify_device(retry=retry)
             self._last_device_check = current_time
         
+        # Only check/start raspotify if we don't have a device yet
+        # If we have a device_id, raspotify must be running (can't have device without it)
         if not self._device_id:
+            raspotify_was_started = False
+            # Check if raspotify is running
             if not self._check_raspotify_running():
                 # Try to start the service automatically
-                if not self._start_raspotify_service():
-                    raise BackendError("raspotify service is not running and could not be started automatically. Start it manually with: sudo systemctl start raspotify")
+                if self._start_raspotify_service():
+                    raspotify_was_started = True
+                    logger.info("raspotify service was started - will retry device lookup")
+                else:
+                    # Start command failed, but wait a bit to see if service starts anyway
+                    logger.info("raspotify start command failed, but checking if service becomes available...")
+                    # Wait up to 5 seconds to see if service starts asynchronously
+                    for i in range(5):
+                        time.sleep(1)
+                        if self._check_raspotify_running():
+                            logger.info(f"raspotify is running (verified after {i+1}s, despite start command failure)")
+                            raspotify_was_started = True
+                            break
+                    
+                    # Final check
+                    if not self._check_raspotify_running():
+                        raise BackendError(
+                            "raspotify service is not running and could not be started automatically. "
+                            "Start it manually with: sudo systemctl start raspotify\n"
+                            "Or check if it's running with: systemctl status raspotify"
+                        )
+                    else:
+                        logger.info("raspotify is running (verified after start attempt)")
+            else:
+                logger.debug("raspotify is running (checked before device lookup)")
             
-            # If MPRIS is available, we can still control playback (but not start playlists)
-            if self._mpris_player:
-                logger.warning(
-                    "Raspotify device not found in Spotify API, but MPRIS interface is available. "
-                    "Basic controls (play/pause/next/previous) will work, but starting new playlists may fail. "
-                    "The device should appear in the API after first manual connection from Spotify app."
+            # If we just started raspotify, wait a bit for it to connect to Spotify and register
+            # Then retry finding the device with retry enabled
+            if raspotify_was_started:
+                self._device_activation_attempts = 0
+                logger.info("raspotify was just started - waiting for it to connect to Spotify and register as device...")
+                # Give raspotify time to: start process, connect to Spotify servers, register as device
+                # This can take 3-5 seconds on a slow connection
+                time.sleep(3.0)
+                logger.info("Retrying device lookup after raspotify startup...")
+                self._device_id = self._find_raspotify_device(retry=True)
+                self._last_device_check = current_time
+            
+            # If still no device, check for MPRIS fallback
+            if not self._device_id:
+                # If MPRIS is available, we can still control playback (but not start playlists)
+                if self._mpris_player:
+                    logger.warning(
+                        "Raspotify device not found in Spotify API, but MPRIS interface is available. "
+                        "Basic controls (play/pause/next/previous) will work, but starting new playlists may fail. "
+                        "The device should appear in the API after first manual connection from Spotify app."
+                    )
+                    return True  # Allow operation with MPRIS fallback
+                
+                play_device_error_beep()
+                raise BackendError(
+                    "Raspotify device not found in Spotify API and MPRIS fallback unavailable. "
+                    "Raspotify is running, but it needs to be 'activated' first:\n"
+                    "1. Open Spotify app (mobile or desktop)\n"
+                    "2. Look for your Raspberry Pi device in the device list\n"
+                    "3. Connect to it (play something on it)\n"
+                    "4. Once connected, it will appear in the API and playback will work.\n"
+                    "Note: After first activation, the device should work automatically on subsequent boots."
                 )
-                return True  # Allow operation with MPRIS fallback
-            
-            play_device_error_beep()
-            raise BackendError(
-                "Raspotify device not found in Spotify API and MPRIS fallback unavailable. "
-                "Raspotify is running, but it needs to be 'activated' first:\n"
-                "1. Open Spotify app (mobile or desktop)\n"
-                "2. Look for your Raspberry Pi device in the device list\n"
-                "3. Connect to it (play something on it)\n"
-                "4. Once connected, it will appear in the API and playback will work.\n"
-                "Note: After first activation, the device should work automatically on subsequent boots."
-            )
         
         return True
+    
+    def _ensure_device_active(self) -> bool:
+        """
+        Ensure the device is active (selected in Spotify).
+        If inactive, transfer playback to it.
+        
+        Returns:
+            True if device is active or was successfully activated, False otherwise
+        """
+        if not self._device_id or not self._spotify:
+            return False
+        
+        try:
+            # Get current device list
+            devices = self._spotify.devices()
+            device_list = devices.get('devices', [])
+            
+            # Find our device and check if it's active
+            for device in device_list:
+                if device.get('id') == self._device_id:
+                    is_active = device.get('is_active', False)
+                    if is_active:
+                        logger.debug(f"Device {self._device_id} is already active")
+                        return True
+                    else:
+                        # Device is inactive, transfer playback to it
+                        logger.info(f"Device {self._device_id} is inactive, transferring playback to it...")
+                        try:
+                            self._spotify.transfer_playback(device_id=self._device_id, force_play=False)
+                            # Give it a moment to transfer
+                            time.sleep(0.5)
+                            logger.info("Successfully transferred playback to device")
+                            return True
+                        except spotipy.exceptions.SpotifyException as e:
+                            if e.http_status == 404:
+                                logger.warning("Device not found when trying to transfer playback - device may have disconnected")
+                                # Force device refresh
+                                self._device_id = None
+                                self._last_device_check = 0
+                                return False
+                            else:
+                                logger.warning(f"Failed to transfer playback to device: {e}")
+                                return False
+            
+            # Device not found in list - might have disconnected
+            logger.warning(f"Device {self._device_id} not found in device list - device may have disconnected")
+            self._device_id = None
+            self._last_device_check = 0
+            return False
+            
+        except Exception as e:
+            logger.warning(f"Error checking/activating device: {e}")
+            return False
     
     def _normalize_uri(self, source_id: str) -> str:
         """Normalize source ID to full Spotify URI."""
@@ -418,11 +658,6 @@ class SpotifyBackend(BaseBackend):
                 - playlist_id: Playlist ID (alternative to source_id)
         """
         try:
-            if not self._check_raspotify_running():
-                # Try to start the service automatically
-                if not self._start_raspotify_service():
-                    raise BackendError("raspotify service is not running and could not be started automatically. Start it manually with: sudo systemctl start raspotify")
-            
             if not self._spotify:
                 raise BackendError("Spotify client not initialized")
             
@@ -432,7 +667,39 @@ class SpotifyBackend(BaseBackend):
             self._current_playlist_id = uri
             
             # Ensure we have a device (with automatic activation retries)
+            # This will also check for raspotify if needed
             self._ensure_device(retry=True)
+            
+            # If we have a device ID, raspotify is likely running
+            # Only check/start if we don't have a device yet
+            if not self._device_id:
+                # Check if raspotify is running
+                if not self._check_raspotify_running():
+                    # Try to start the service automatically
+                    if not self._start_raspotify_service():
+                        # Double-check - it might have been running but our check failed
+                        # or it might have started in the meantime
+                        time.sleep(0.5)
+                        if self._check_raspotify_running():
+                            logger.info("raspotify is running (verified after start attempt)")
+                        else:
+                            raise BackendError(
+                                "raspotify service is not running and could not be started automatically. "
+                                "Start it manually with: sudo systemctl start raspotify\n"
+                                "Or check if it's running with: systemctl status raspotify"
+                            )
+            
+            # Ensure device is active (selected in Spotify) before trying to play
+            # Inactive devices will return 404 when trying to play
+            if self._device_id:
+                if not self._ensure_device_active():
+                    # Device activation failed, try to refresh device
+                    logger.warning("Device activation failed, refreshing device...")
+                    self._device_id = None
+                    self._last_device_check = 0
+                    self._ensure_device(retry=True)
+                    if self._device_id:
+                        self._ensure_device_active()
             
             # Get track count and pick a random starting position for shuffle
             track_count = self._get_track_count(uri)
@@ -471,6 +738,9 @@ class SpotifyBackend(BaseBackend):
                 # Try to get current track info
                 time.sleep(1)  # Wait a bit for playback to start
                 self._update_current_item()
+                
+                # Start monitoring thread to detect when playlist ends
+                self._start_monitoring()
                 
                 return True
             except spotipy.exceptions.SpotifyException as e:
@@ -511,6 +781,10 @@ class SpotifyBackend(BaseBackend):
                         self._is_paused = False
                         time.sleep(1)
                         self._update_current_item()
+                        
+                        # Start monitoring thread to detect when playlist ends
+                        self._start_monitoring()
+                        
                         return True
                     except Exception as refresh_error:
                         play_auth_error_beep()
@@ -519,49 +793,58 @@ class SpotifyBackend(BaseBackend):
                             "You may need to run spotify_oauth_setup.py again to re-authenticate."
                         )
                 elif e.http_status == 404:
-                    play_not_found_beep()
-                    raise BackendError(f"Playlist/album/track not found: {uri}")
+                    # 404 could mean device not found OR playlist not found
+                    # Check if it's a device issue first
+                    error_msg = str(e).lower()
+                    if 'device' in error_msg or 'not found' in error_msg:
+                        logger.warning("Received 404 - device may not be active. Attempting to activate device...")
+                        # Try to activate device and retry
+                        if self._ensure_device_active():
+                            # Recalculate track count and offset for retry
+                            track_count = self._get_track_count(uri)
+                            random_offset = None
+                            if track_count and track_count > 1:
+                                random_offset = random.randint(0, track_count - 1)
+                                logger.info(f"Starting playback from random track {random_offset + 1} of {track_count} (after device activation)")
+                            
+                            # Retry playback once
+                            try:
+                                if random_offset is not None:
+                                    self._spotify.start_playback(
+                                        device_id=self._device_id,
+                                        context_uri=uri,
+                                        offset={'position': random_offset}
+                                    )
+                                    logger.info(f"Started playback after device activation: {uri}")
+                                else:
+                                    self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
+                                    logger.info(f"Started playback after device activation: {uri}")
+                                
+                                # Enable shuffle mode
+                                try:
+                                    self._spotify.shuffle(state=True, device_id=self._device_id)
+                                    logger.info("Shuffle mode enabled after device activation")
+                                except Exception as shuffle_error:
+                                    logger.warning(f"Could not enable shuffle mode: {shuffle_error}")
+                                
+                                self.set_playing_state(True)
+                                self._is_paused = False
+                                time.sleep(1)
+                                self._update_current_item()
+                                self._start_monitoring()
+                                return True
+                            except Exception as retry_error:
+                                logger.error(f"Playback still failed after device activation: {retry_error}")
+                                play_not_found_beep()
+                                raise BackendError(f"Failed to start playback: {retry_error}")
+                        else:
+                            play_not_found_beep()
+                            raise BackendError(f"Device not found and could not be activated")
+                    else:
+                        play_not_found_beep()
+                        raise BackendError(f"Playlist/album/track not found: {uri}")
                 elif e.http_status == 403:
                     raise BackendError("Permission denied. Make sure your Spotify account has Premium.")
-                elif e.http_status == 404 and 'device' in str(e).lower():
-                    # Device not found error - try to reactivate
-                    logger.warning("Device not found during playback, attempting to reactivate...")
-                    self._device_id = None  # Force refresh
-                    self._ensure_device(retry=True)
-                    # Retry playback once
-                    try:
-                        # Get track count and pick a random starting position for shuffle
-                        track_count = self._get_track_count(uri)
-                        random_offset = None
-                        if track_count and track_count > 1:
-                            random_offset = random.randint(0, track_count - 1)
-                            logger.info(f"Starting playback from random track {random_offset + 1} of {track_count} (after reactivation)")
-                        
-                        if random_offset is not None:
-                            self._spotify.start_playback(
-                                device_id=self._device_id,
-                                context_uri=uri,
-                                offset={'position': random_offset}
-                            )
-                            logger.info(f"Started playback from random position after reactivation: {uri}")
-                        else:
-                            self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
-                            logger.info(f"Started playback after reactivation: {uri}")
-                        
-                        # Enable shuffle mode
-                        try:
-                            self._spotify.shuffle(state=True, device_id=self._device_id)
-                            logger.info("Shuffle mode enabled after reactivation")
-                        except Exception as shuffle_error:
-                            logger.warning(f"Could not enable shuffle mode: {shuffle_error}")
-                        
-                        self.set_playing_state(True)
-                        self._is_paused = False
-                        time.sleep(1)
-                        self._update_current_item()
-                        return True
-                    except Exception as retry_e:
-                        raise BackendError(f"Failed to start playback after reactivation: {retry_e}")
                 else:
                     raise BackendError(f"Spotify API error: {e}")
                     
@@ -732,6 +1015,13 @@ class SpotifyBackend(BaseBackend):
             self._is_paused = False
             self.set_current_item(None)
             self._current_playlist_id = None
+            
+            # Stop monitoring thread
+            self._stop_monitoring()
+            
+            # Clear callback to avoid stale callbacks
+            self.set_on_playback_ended_callback(None)
+            
             logger.info("Stopped Spotify playback")
             return True
         except Exception as e:
@@ -924,3 +1214,75 @@ class SpotifyBackend(BaseBackend):
             return self._is_playing and not self._is_paused
         except Exception:
             return self._is_playing and not self._is_paused
+    
+    def _start_monitoring(self):
+        """Start monitoring thread to detect when playlist ends."""
+        if self._monitoring_active:
+            return  # Already monitoring
+        
+        self._monitoring_active = True
+        self._was_playing = True
+        
+        def monitor():
+            self._monitor_playback()
+        
+        self._monitoring_thread = threading.Thread(target=monitor, daemon=True)
+        self._monitoring_thread.start()
+        logger.info("Started Spotify playback monitoring thread")
+    
+    def _stop_monitoring(self):
+        """Stop monitoring thread."""
+        if not self._monitoring_active:
+            return
+        
+        self._monitoring_active = False
+        if self._monitoring_thread and self._monitoring_thread.is_alive():
+            # Thread will exit on next check
+            logger.info("Stopping Spotify playback monitoring thread")
+    
+    def _monitor_playback(self):
+        """
+        Background thread to monitor Spotify playback and detect when playlist ends.
+        When playlist ends naturally (not paused), notify callback to cycle to next source.
+        """
+        consecutive_stopped_checks = 0
+        required_stopped_checks = 3  # Require 3 consecutive checks to confirm playlist ended
+        
+        while self._monitoring_active:
+            try:
+                # Check if we have a playlist to monitor
+                if not self._current_playlist_id:
+                    time.sleep(2.0)
+                    continue
+                
+                # Check current playback state
+                currently_playing = self.is_playing()
+                
+                if currently_playing:
+                    # Reset counter if playing
+                    consecutive_stopped_checks = 0
+                    self._was_playing = True
+                elif self._was_playing and not self._is_paused:
+                    # Was playing but now stopped (and not paused) - playlist might have ended
+                    consecutive_stopped_checks += 1
+                    
+                    if consecutive_stopped_checks >= required_stopped_checks:
+                        # Playlist has ended naturally
+                        logger.info("Spotify playlist ended - notifying callback to cycle to next source")
+                        self._was_playing = False
+                        self._notify_playback_ended()
+                        # Stop monitoring since we've notified
+                        self._monitoring_active = False
+                        break
+                else:
+                    # Not playing and was already stopped (or paused) - reset
+                    consecutive_stopped_checks = 0
+                    self._was_playing = False
+                
+                # Sleep before next check
+                time.sleep(2.0)  # Check every 2 seconds
+                
+            except Exception as e:
+                logger.error(f"Error in Spotify playback monitoring thread: {e}")
+                # Continue monitoring despite errors
+                time.sleep(2.0)

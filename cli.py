@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 from core.sources import SourceManager, DEFAULT_STATE_FILE
-from core.playback_history import PlaybackHistory, DEFAULT_HISTORY_FILE
+from core.playback_history import PlaybackHistory
 
 # Try to import player controller for live status
 try:
@@ -110,16 +110,26 @@ def show_dashboard():
                     for entry in recent:
                         timestamp = format_timestamp(entry.get('timestamp', ''))
                         action = entry.get('action', 'unknown')
-                        source_label = entry.get('source_label', 'Unknown')
-                        item_name = entry.get('item_name', '')
+                        event_type = entry.get('event_type', '')
+                        source_label = entry.get('source_label') or 'Unknown'
+                        item_name = entry.get('item_name') or ''
                         
-                        if action == 'play':
+                        if action == 'playback_start':
                             item_str = f" - {item_name}" if item_name else ""
                             print(f"{timestamp} | PLAY | {source_label}{item_str}")
                         elif action == 'source_change':
                             print(f"{timestamp} | SOURCE CHANGE | {source_label}")
+                        elif event_type == 'user_input':
+                            action_display = action.replace('_', ' ').upper()
+                            if source_label and source_label != 'Unknown':
+                                print(f"{timestamp} | {action_display} | {source_label}")
+                            else:
+                                print(f"{timestamp} | {action_display}")
                         elif action in ('pause', 'resume', 'next', 'previous'):
                             print(f"{timestamp} | {action.upper()} | {source_label}")
+                        else:
+                            event_prefix = f"[{event_type.upper()}] " if event_type else ""
+                            print(f"{timestamp} | {event_prefix}{action.replace('_', ' ').upper()}")
                 else:
                     print("No history available")
             
@@ -154,23 +164,115 @@ def show_history(limit: int = 50):
         for entry in entries:
             timestamp = format_timestamp(entry.get('timestamp', ''))
             action = entry.get('action', 'unknown')
-            source_label = entry.get('source_label', 'Unknown')
-            item_name = entry.get('item_name', '')
+            event_type = entry.get('event_type', '')
+            source_label = entry.get('source_label') or 'Unknown'
+            item_name = entry.get('item_name') or ''
+            value = entry.get('value')
+            duration_ms = entry.get('duration_ms')
             
-            if action == 'play':
+            # Format based on event type and action
+            if action == 'playback_start':
                 item_str = f" - {item_name}" if item_name else ""
                 print(f"{timestamp} | PLAY | {source_label}{item_str}")
             elif action == 'source_change':
                 print(f"{timestamp} | SOURCE CHANGE | {source_label}")
+            elif event_type == 'user_input':
+                # User input events
+                action_display = action.replace('_', ' ').upper()
+                if source_label and source_label != 'Unknown':
+                    print(f"{timestamp} | {action_display} | {source_label}")
+                else:
+                    print(f"{timestamp} | {action_display}")
+            elif event_type == 'audio':
+                # Audio events
+                if value is not None:
+                    if action in ('volume_set', 'volume_adjust'):
+                        print(f"{timestamp} | {action.replace('_', ' ').upper()} | {value:.0f}%")
+                    else:
+                        print(f"{timestamp} | {action.replace('_', ' ').upper()}")
+                else:
+                    print(f"{timestamp} | {action.replace('_', ' ').upper()}")
+            elif event_type == 'performance' and duration_ms:
+                print(f"{timestamp} | {action.replace('_', ' ').upper()} | {duration_ms:.2f}ms")
+            elif event_type == 'network':
+                status = entry.get('status', '')
+                print(f"{timestamp} | {action.replace('_', ' ').upper()} | {status}")
             elif action in ('pause', 'resume', 'next', 'previous'):
                 print(f"{timestamp} | {action.upper()} | {source_label}")
             else:
-                print(f"{timestamp} | {action.upper()} | {source_label}")
+                # Generic display
+                event_prefix = f"[{event_type.upper()}] " if event_type else ""
+                print(f"{timestamp} | {event_prefix}{action.replace('_', ' ').upper()}")
         
         print("\n" + "=" * 60)
     
     except Exception as e:
         print(f"Error loading history: {e}")
+
+
+def cache_sources(force: bool = False):
+    """Manually trigger Piper TTS cache generation for all sources."""
+    from utils.announcements import generate_cached_audio, ensure_cache_directory, get_cache_path
+    
+    print("=" * 60)
+    print("GENERATING PIPER TTS CACHE FOR SOURCES")
+    print("=" * 60)
+    
+    try:
+        source_manager = SourceManager()
+        sources = source_manager.get_sources()
+        
+        if not sources:
+            print("\nNo sources configured.")
+            return
+        
+        print(f"\nFound {len(sources)} sources")
+        print("Generating cache files...\n")
+        
+        ensure_cache_directory()
+        missing_count = 0
+        cached_count = 0
+        failed_count = 0
+        
+        for i, source in enumerate(sources, 1):
+            source_label = source.get('label', source.get('id', 'Unknown source'))
+            cache_path = get_cache_path(source_label)
+            
+            # Check if already cached
+            if not force and cache_path.exists() and cache_path.stat().st_size > 0:
+                print(f"[{i}/{len(sources)}] ✓ Already cached: {source_label}")
+                cached_count += 1
+            else:
+                # If forcing, delete existing cache file to force regeneration
+                if force and cache_path.exists():
+                    try:
+                        cache_path.unlink()
+                        print(f"[{i}/{len(sources)}] Regenerating: {source_label}...", end=' ', flush=True)
+                    except Exception as e:
+                        print(f"[{i}/{len(sources)}] Warning: Could not delete existing cache for {source_label}: {e}")
+                        print(f"[{i}/{len(sources)}] Generating: {source_label}...", end=' ', flush=True)
+                else:
+                    print(f"[{i}/{len(sources)}] Generating: {source_label}...", end=' ', flush=True)
+                
+                if generate_cached_audio(source_label):
+                    print("✓")
+                    cached_count += 1
+                else:
+                    print("✗ Failed")
+                    failed_count += 1
+                    missing_count += 1
+        
+        print("\n" + "=" * 60)
+        print(f"Cache generation complete:")
+        print(f"  ✓ Cached: {cached_count}")
+        if missing_count > 0:
+            print(f"  ✗ Failed: {failed_count}")
+        print("=" * 60)
+        
+    except Exception as e:
+        print(f"\nError generating cache: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def main():
@@ -184,6 +286,8 @@ Examples:
   %(prog)s dashboard       Show live dashboard (refreshes every 2s)
   %(prog)s history         Show last 50 history entries
   %(prog)s history -n 100  Show last 100 history entries
+  %(prog)s cache           Generate Piper TTS cache for all sources
+  %(prog)s cache -f        Force regenerate all cache files
         """
     )
     
@@ -204,6 +308,14 @@ Examples:
         help='Number of entries to show (default: 50)'
     )
     
+    # Cache command
+    cache_parser = subparsers.add_parser('cache', help='Generate Piper TTS cache for all sources')
+    cache_parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='Force regeneration of existing cache files'
+    )
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -216,6 +328,8 @@ Examples:
         show_dashboard()
     elif args.command == 'history':
         show_history(args.limit)
+    elif args.command == 'cache':
+        cache_sources(force=args.force)
     else:
         parser.print_help()
         sys.exit(1)

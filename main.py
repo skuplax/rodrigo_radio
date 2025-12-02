@@ -4,6 +4,14 @@ import sys
 import signal
 import logging
 from pathlib import Path
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent / ".env")
+except ImportError:
+    pass  # python-dotenv not required, but helpful
+
 from core.player_controller import PlayerController
 
 # Configure logging - use script directory
@@ -50,19 +58,31 @@ def main():
         # Initialize controller with paths relative to script directory
         sources_file = SCRIPT_DIR / "config" / "sources.json"
         state_file = SCRIPT_DIR / "data" / "state.json"
-        history_file = SCRIPT_DIR / "data" / "history.json"
         
         # Optional: Configure rotary encoder pins
         # Set to None to disable rotary encoder
         # Example: encoder_pins = {'clk': 5, 'dt': 6, 'sw': 13, 'volume_step': 2}
-        encoder_pins = {'clk': 5, 'dt': 6, 'sw': None, 'volume_step': 2}  # KY-040 on GPIO 5 (CLK) and 6 (DT)
+        encoder_pins = {
+            'clk': 5, 
+            'dt': 6, 
+            'sw': None, 
+            'volume_step': 2,  # KY-040 on GPIO 5 (CLK) and 6 (DT)
+            # Time-based volume limiting dB offsets:
+            'time_limit_day_db': 0.0,        # Day hours (9am-5pm)
+            'time_limit_evening_db': -6.0,   # Evening transition (6pm-7pm, 8am-9am)
+            'time_limit_night_db': -12.0     # Night hours (7pm-7am)
+        }
         
         controller = PlayerController(
             sources_file=sources_file,
             state_file=state_file,
-            history_file=history_file,
             encoder_pins=encoder_pins
         )
+        
+        # Log startup event
+        controller.history.log_config_event('startup', 
+                                           sources_file=str(sources_file),
+                                           state_file=str(state_file))
         
         # Run (blocks forever)
         controller.run()

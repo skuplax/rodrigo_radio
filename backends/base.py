@@ -1,6 +1,6 @@
 """Base backend interface for audio playback backends."""
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Callable
 
 
 class BackendError(Exception):
@@ -14,6 +14,7 @@ class BaseBackend(ABC):
     def __init__(self):
         self._is_playing = False
         self._current_item: Optional[str] = None
+        self._on_playback_ended: Optional[Callable[[], None]] = None
     
     @abstractmethod
     def play(self, source_id: str, **kwargs) -> bool:
@@ -72,4 +73,24 @@ class BaseBackend(ABC):
     def set_current_item(self, item: Optional[str]):
         """Update current item identifier."""
         self._current_item = item
+    
+    def set_on_playback_ended_callback(self, callback: Optional[Callable[[], None]]):
+        """
+        Set callback to be invoked when playback ends naturally (e.g., playlist finished).
+        
+        Args:
+            callback: Function to call when playback ends, or None to clear callback
+        """
+        self._on_playback_ended = callback
+    
+    def _notify_playback_ended(self):
+        """Notify that playback has ended naturally (e.g., playlist finished)."""
+        if self._on_playback_ended:
+            try:
+                self._on_playback_ended()
+            except Exception as e:
+                # Log but don't raise - callback errors shouldn't break backend
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error in playback ended callback: {e}")
 

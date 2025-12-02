@@ -3,6 +3,7 @@ import logging
 import re
 import subprocess
 import threading
+from datetime import datetime, time
 from typing import Optional, Callable
 from gpiozero import DigitalInputDevice
 from signal import pause
@@ -13,7 +14,9 @@ logger = logging.getLogger(__name__)
 class VolumeController:
     """Controls system audio volume using amixer."""
     
-    def __init__(self, mixer_control: str = 'PCM', card: int = 0, max_db: float = -1.0):
+    def __init__(self, mixer_control: str = 'PCM', card: int = 0, max_db: float = -1.0,
+                 time_limit_day_db: float = 0.0, time_limit_evening_db: float = -5.0, 
+                 time_limit_night_db: float = -10.0):
         """
         Initialize volume controller.
         
@@ -21,17 +24,38 @@ class VolumeController:
             mixer_control: ALSA mixer control name (default: 'PCM')
             card: ALSA card number (default: 0)
             max_db: Maximum volume in dB (default: -1.0 to prevent clipping)
+            time_limit_day_db: dB offset for day hours 9am-5pm (default: 0.0)
+            time_limit_evening_db: dB offset for evening transition 6pm-7pm and 8am-9am (default: -7.0)
+            time_limit_night_db: dB offset for night hours 7pm-7am (default: -14.0)
         """
         self.mixer_control = mixer_control
         self.card = card
-        self.max_db = max_db  # Maximum dB limit (-1dB to prevent clipping)
+        self._base_max_db = max_db  # Base maximum dB limit (original limit, not time-limited)
+        self.max_db = max_db  # Current effective maximum dB limit (may be time-limited)
         self._volume_lock = threading.Lock()
         self._min_db = None
         self._max_db_raw = None
         self._numid = None  # Cache numid after first lookup
         self._current_volume = self.get_volume()
         self._get_mixer_limits()
-        logger.info(f"Volume controller initialized (control: {mixer_control}, card: {card}, max: {max_db}dB)")
+        
+        # Time-based limiting configuration
+        self._time_limit_day_db = time_limit_day_db
+        self._time_limit_evening_db = time_limit_evening_db
+        self._time_limit_night_db = time_limit_night_db
+        
+        # Time-based limiting thread
+        self._time_limit_thread = None
+        self._time_limit_stop = threading.Event()
+        
+        # Initialize time-based limit
+        self._update_time_based_limit()
+        
+        # Start background thread for time-based limiting
+        self._start_time_limit_thread()
+        
+        logger.info(f"Volume controller initialized (control: {mixer_control}, card: {card}, base max: {max_db}dB, "
+                   f"time limits: day={time_limit_day_db}dB, evening={time_limit_evening_db}dB, night={time_limit_night_db}dB)")
     
     def _get_control_numid(self) -> Optional[int]:
         """Get the numid for the mixer control (cached after first lookup)."""
@@ -110,6 +134,134 @@ class VolumeController:
             logger.warning(f"Error getting mixer limits: {e}, using defaults")
             self._min_db = -102.39
             self._max_db_raw = 400
+    
+    def _get_time_based_db_offset(self) -> float:
+        """
+        Get the current time-based dB offset.
+        
+        Schedule:
+        - 5pm-6pm: day_db (default: 0dB)
+        - 6pm-7pm: evening_db (default: -7dB)
+        - 7pm-7am: night_db (default: -14dB)
+        - 7am-8am: night_db (default: -14dB)
+        - 8am-9am: evening_db (default: -7dB)
+        - 9am-5pm: day_db (default: 0dB)
+        
+        Returns:
+            dB offset based on configured values
+        """
+        now = datetime.now().time()
+        
+        # Night period: 7pm (19:00) to 7am (07:00)
+        if time(19, 0) <= now or now < time(7, 0):
+            return self._time_limit_night_db
+        
+        # Morning transition: 7am-8am stays at night_db
+        if time(7, 0) <= now < time(8, 0):
+            return self._time_limit_night_db
+        
+        # Morning transition: 8am-9am increases to evening_db
+        if time(8, 0) <= now < time(9, 0):
+            return self._time_limit_evening_db
+        
+        # Day period: 9am-5pm at day_db
+        if time(9, 0) <= now < time(17, 0):
+            return self._time_limit_day_db
+        
+        # Evening transition: 5pm-6pm stays at day_db
+        if time(17, 0) <= now < time(18, 0):
+            return self._time_limit_day_db
+        
+        # Evening transition: 6pm-7pm decreases to evening_db
+        if time(18, 0) <= now < time(19, 0):
+            return self._time_limit_evening_db
+        
+        # Default fallback (shouldn't reach here)
+        return self._time_limit_day_db
+    
+    def _update_time_based_limit(self):
+        """Update the effective max_db based on current time and reduce volume if needed."""
+        # Calculate new time-based max_db
+        db_offset = self._get_time_based_db_offset()
+        new_max_db = self._base_max_db + db_offset
+        old_max_db = self.max_db
+        
+        with self._volume_lock:
+            # Update the effective max_db
+            self.max_db = new_max_db
+            
+            # Get current volume dB value from amixer
+            try:
+                result = subprocess.run(
+                    ['amixer', 'get', self.mixer_control, f'{self.card}'],
+                    capture_output=True,
+                    text=True,
+                    timeout=2
+                )
+                
+                current_db_value = None
+                for line in result.stdout.split('\n'):
+                    if 'Playback' in line and 'dB' in line:
+                        db_match = re.search(r'\[(-?\d+\.?\d*)dB\]', line)
+                        if db_match:
+                            try:
+                                current_db_value = float(db_match.group(1))
+                                break
+                            except ValueError:
+                                pass
+                
+                if current_db_value is not None:
+                    # Check if current volume exceeds the new limit
+                    if current_db_value > new_max_db:
+                        # Current volume exceeds new limit, reduce it
+                        logger.info(f"Time-based limit changed: reducing volume from {current_db_value:.2f}dB to {new_max_db:.2f}dB (offset: {db_offset}dB)")
+                        # Set volume to the new maximum
+                        db_raw = int(new_max_db * 100)
+                        numid = self._get_control_numid()
+                        if numid:
+                            result = subprocess.run(
+                                ['amixer', '-q', '-c', str(self.card), 'cset', f'numid={numid}', '--', str(db_raw)],
+                                capture_output=True,
+                                text=True,
+                                timeout=2
+                            )
+                            if result.returncode == 0:
+                                # Update current volume percentage
+                                self._current_volume = self._db_to_percentage(new_max_db)
+                                logger.info(f"Volume reduced to {new_max_db:.2f}dB ({self._current_volume}%)")
+                        else:
+                            # Fallback: use percentage
+                            max_percent = self._db_to_percentage(new_max_db)
+                            result = subprocess.run(
+                                ['amixer', '-q', '-c', str(self.card), 'set', self.mixer_control, f'{max_percent}%'],
+                                capture_output=True,
+                                text=True,
+                                timeout=2
+                            )
+                            if result.returncode == 0:
+                                self._current_volume = max_percent
+                                logger.info(f"Volume reduced to {new_max_db:.2f}dB ({max_percent}%)")
+                    else:
+                        logger.debug(f"Time-based limit updated: max_db={new_max_db:.2f}dB (offset: {db_offset}dB), current volume={current_db_value:.2f}dB")
+                else:
+                    logger.debug(f"Time-based limit updated: max_db={new_max_db:.2f}dB (offset: {db_offset}dB)")
+            except Exception as e:
+                logger.debug(f"Error checking current volume for time-based limit: {e}")
+                logger.debug(f"Time-based limit updated: max_db={new_max_db:.2f}dB (offset: {db_offset}dB)")
+    
+    def _start_time_limit_thread(self):
+        """Start background thread that periodically updates time-based volume limits."""
+        def time_limit_worker():
+            """Worker thread that checks time every 5 minutes."""
+            while not self._time_limit_stop.wait(300):  # Wait 5 minutes (300 seconds)
+                try:
+                    self._update_time_based_limit()
+                except Exception as e:
+                    logger.error(f"Error updating time-based limit: {e}")
+        
+        self._time_limit_thread = threading.Thread(target=time_limit_worker, daemon=True)
+        self._time_limit_thread.start()
+        logger.info("Time-based volume limiting thread started")
     
     def _db_to_percentage(self, db_value: float) -> int:
         """
@@ -339,13 +491,23 @@ class VolumeController:
         except Exception as e:
             logger.error(f"Error toggling mute: {e}")
             return False
+    
+    def close(self):
+        """Clean up resources, including time-based limiting thread."""
+        # Stop time-based limiting thread
+        if self._time_limit_thread and self._time_limit_thread.is_alive():
+            self._time_limit_stop.set()
+            self._time_limit_thread.join(timeout=2.0)
+            logger.info("Time-based volume limiting thread stopped")
 
 
 class RotaryEncoder:
     """Handles rotary encoder input for volume control."""
     
     def __init__(self, clk_pin: int, dt_pin: int, sw_pin: Optional[int] = None,
-                 volume_step: int = 2, volume_controller: Optional[VolumeController] = None):
+                 volume_step: int = 2, volume_controller: Optional[VolumeController] = None,
+                 time_limit_day_db: float = 0.0, time_limit_evening_db: float = -7.0,
+                 time_limit_night_db: float = -14.0):
         """
         Initialize rotary encoder.
         
@@ -355,13 +517,20 @@ class RotaryEncoder:
             sw_pin: Optional GPIO pin for switch/button (for mute toggle)
             volume_step: Volume change per encoder step (default: 2%)
             volume_controller: VolumeController instance (creates default if None)
+            time_limit_day_db: dB offset for day hours 9am-5pm (default: 0.0)
+            time_limit_evening_db: dB offset for evening transition 6pm-7pm and 8am-9am (default: -7.0)
+            time_limit_night_db: dB offset for night hours 7pm-7am (default: -14.0)
         """
         self.clk_pin = clk_pin
         self.dt_pin = dt_pin
         self.sw_pin = sw_pin
         self.volume_step = volume_step
         
-        self.volume_controller = volume_controller or VolumeController()
+        self.volume_controller = volume_controller or VolumeController(
+            time_limit_day_db=time_limit_day_db,
+            time_limit_evening_db=time_limit_evening_db,
+            time_limit_night_db=time_limit_night_db
+        )
         
         # GPIO devices
         self.clk = None
@@ -508,6 +677,9 @@ class RotaryEncoder:
             self.dt.close()
         if self.sw:
             self.sw.close()
+        # Close volume controller to stop time-based limiting thread
+        if self.volume_controller:
+            self.volume_controller.close()
         logger.info("Rotary encoder closed")
     
     def wait(self):

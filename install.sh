@@ -130,6 +130,7 @@ main() {
     # Make scripts executable
     print_info "Making scripts executable..."
     chmod +x main.py cli.py install.sh 2>/dev/null || true
+    chmod +x scripts/*.py 2>/dev/null || true
 
     # Create necessary directories
     print_info "Creating necessary directories..."
@@ -166,6 +167,78 @@ main() {
     
     # Create data directory for runtime files
     mkdir -p data
+
+    # Spotify OAuth setup
+    echo ""
+    print_info "Spotify Web API Setup"
+    echo "=========================================="
+    read -p "Set up Spotify Web API authentication now? (y/N) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        # Check if spotipy is installed
+        if ! python3 -c "import spotipy" 2>/dev/null; then
+            print_info "Installing spotipy package..."
+            if ! pip3 install --user --break-system-packages spotipy; then
+                print_error "Failed to install spotipy. You can install it manually later with: pip3 install --user --break-system-packages spotipy"
+            else
+                print_info "spotipy installed successfully"
+            fi
+        fi
+        
+        # Check if config already exists
+        CONFIG_FILE="$TARGET_DIR/config/spotify_api_config.json"
+        if [ -f "$CONFIG_FILE" ]; then
+            echo ""
+            print_warn "Spotify API config already exists at $CONFIG_FILE"
+            read -p "Do you want to reconfigure? (y/N) " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                print_info "Skipping Spotify OAuth setup (using existing config)"
+            else
+                # Run OAuth setup
+                OAUTH_SCRIPT="scripts/spotify_oauth_setup.py"
+                if [ -f "$OAUTH_SCRIPT" ]; then
+                    print_info "Running Spotify OAuth setup..."
+                    if python3 "$OAUTH_SCRIPT"; then
+                        print_info "Spotify OAuth setup completed successfully!"
+                    else
+                        print_warn "Spotify OAuth setup failed or was cancelled. You can run it manually later:"
+                        echo "  python3 $TARGET_DIR/$OAUTH_SCRIPT"
+                    fi
+                else
+                    print_error "OAuth setup script not found at $OAUTH_SCRIPT"
+                    print_warn "You can set up Spotify OAuth manually later by running:"
+                    echo "  python3 $TARGET_DIR/$OAUTH_SCRIPT"
+                fi
+            fi
+        else
+            # Run OAuth setup
+            OAUTH_SCRIPT="scripts/spotify_oauth_setup.py"
+            if [ -f "$OAUTH_SCRIPT" ]; then
+                print_info "Running Spotify OAuth setup..."
+                echo ""
+                print_info "Before proceeding, make sure you have:"
+                echo "  1. Created a Spotify app at https://developer.spotify.com/dashboard"
+                echo "  2. Added redirect URI: http://127.0.0.1:8888/callback"
+                echo "  3. Copied your Client ID and Client Secret"
+                echo ""
+                read -p "Press Enter to continue with OAuth setup..."
+                if python3 "$OAUTH_SCRIPT"; then
+                    print_info "Spotify OAuth setup completed successfully!"
+                else
+                    print_warn "Spotify OAuth setup failed or was cancelled. You can run it manually later:"
+                    echo "  python3 $TARGET_DIR/$OAUTH_SCRIPT"
+                fi
+            else
+                print_error "OAuth setup script not found at $OAUTH_SCRIPT"
+                print_warn "You can set up Spotify OAuth manually later by running:"
+                echo "  python3 $TARGET_DIR/$OAUTH_SCRIPT"
+            fi
+        fi
+    else
+        print_info "Skipping Spotify OAuth setup. You can set it up later with:"
+        echo "  python3 $TARGET_DIR/scripts/spotify_oauth_setup.py"
+    fi
 
     # Install systemd service
     echo ""
@@ -227,8 +300,13 @@ main() {
     echo ""
     echo "Next steps:"
     echo "1. Edit $TARGET_DIR/config/sources.json with your sources"
+    if [ ! -f "$TARGET_DIR/config/spotify_api_config.json" ]; then
+        echo "2. Set up Spotify Web API (if using Spotify sources):"
+        echo "   python3 $TARGET_DIR/scripts/spotify_oauth_setup.py"
+        echo "   Or re-run the install script and choose to set up Spotify when prompted"
+    fi
     if [ ! -f ~/.config/spotifyd/spotifyd.conf ] || grep -q "your_spotify_username" ~/.config/spotifyd/spotifyd.conf 2>/dev/null; then
-        echo "2. Edit ~/.config/spotifyd/spotifyd.conf with your Spotify credentials (if using Spotify)"
+        echo "3. Edit ~/.config/spotifyd/spotifyd.conf with your Spotify credentials (if using spotifyd)"
     fi
     echo ""
     echo "Service management:"
