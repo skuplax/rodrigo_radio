@@ -281,6 +281,46 @@ To enable programmatic control, you need to set up OAuth authentication. **The i
 
 **Note**: You need a **Spotify Premium** account for this to work.
 
+#### 3. Token Refresh (Preventing Logouts)
+
+Spotify refresh tokens can expire after ~60 days of inactivity, which would require re-authentication. To prevent this, the player includes automatic token refresh:
+
+**Automatic Refresh (Built-in)**:
+- The player automatically refreshes tokens every 3 days while running
+- No action needed - this happens in the background
+- Tokens are refreshed proactively to prevent expiration
+
+**Manual Refresh Script** (Optional, for extra safety):
+You can also run a manual refresh script, useful if the player isn't running continuously:
+
+```bash
+python3 /home/skayflakes/rodrigo_radio/scripts/refresh_spotify_token.py
+```
+
+**Cron Job** (Recommended for extra safety):
+To ensure tokens stay fresh even if the player isn't running, add this to your crontab (`crontab -e`):
+
+```bash
+# Refresh Spotify token every 3 days at 2 AM
+0 2 */3 * * /usr/bin/python3 /home/skayflakes/rodrigo_radio/scripts/refresh_spotify_token.py >> /var/log/spotify_token_refresh.log 2>&1
+```
+
+This provides redundancy - even if the player service is stopped, the cron job will keep tokens fresh.
+
+**What happens if the device is off for a while?**
+- **Short periods (days to weeks)**: No problem. Tokens expire after ~60 days of inactivity, so being off for a week or two won't cause issues.
+- **Extended periods (weeks to months)**: If the device is off for more than ~60 days, the refresh token will expire. When you turn it back on:
+  - The player will detect the expired token and show a clear error message
+  - Simply re-run the OAuth setup: `python3 /home/skayflakes/rodrigo_radio/scripts/spotify_oauth_setup.py`
+  - This is a one-time re-authentication that takes about 2 minutes
+- **Best practice**: If you know the device will be off for a while, you can manually refresh the token before shutting down, or just re-authenticate when you turn it back on.
+
+**If Token Expires**:
+If you see an error about expired refresh tokens, simply re-run the OAuth setup:
+```bash
+python3 /home/skayflakes/rodrigo_radio/scripts/spotify_oauth_setup.py
+```
+
 ## Usage
 
 ### CLI Tool
@@ -347,6 +387,9 @@ sudo systemctl status rodrigo_radio.service
 │   ├── base.py              # Base backend interface
 │   ├── youtube_backend.py   # YouTube playback
 │   └── spotify_backend.py   # Spotify playback
+├── scripts/
+│   ├── spotify_oauth_setup.py    # OAuth setup script
+│   └── refresh_spotify_token.py  # Token refresh utility
 ├── sources.json             # Source configuration (create from .example)
 ├── state.json               # Current state (auto-generated)
 ├── history.json             # Playback history (auto-generated)
@@ -374,6 +417,11 @@ sudo systemctl status rodrigo_radio.service
 - Re-run OAuth setup: `python3 ~/rodrigo_radio/scripts/spotify_oauth_setup.py`
 - Or re-run the install script and choose to set up Spotify when prompted
 - Check that redirect URI matches in Spotify app settings: `http://127.0.0.1:8888/callback`
+
+**If refresh token expires:**
+- The player will show a clear error message with instructions
+- Re-run OAuth setup: `python3 ~/rodrigo_radio/scripts/spotify_oauth_setup.py`
+- To prevent expiration, ensure the player runs regularly or set up the cron job (see Token Refresh section above)
 
 **If device not found:**
 - Make sure raspotify is running and visible in Spotify app

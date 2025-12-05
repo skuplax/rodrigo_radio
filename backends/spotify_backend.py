@@ -61,12 +61,18 @@ class SpotifyBackend(BaseBackend):
         self._monitoring_active = False
         self._monitoring_thread: Optional[threading.Thread] = None
         self._was_playing = False  # Track previous playing state to detect natural end
+        self._auth_manager: Optional[SpotifyOAuth] = None  # Store auth manager for proactive refresh
+        self._token_refresh_thread: Optional[threading.Thread] = None
+        self._token_refresh_active = False
+        self._last_token_refresh = 0
+        self._token_refresh_interval = 3 * 24 * 3600  # Refresh every 3 days (tokens expire after ~60 days of inactivity, so 3 days provides good safety margin)
         
         if not SPOTIPY_AVAILABLE:
             raise BackendError("spotipy is not installed. Install it with: pip3 install --user --break-system-packages spotipy")
         
         self._init_spotify()
         self._init_mpris()
+        self._start_token_refresh_thread()
     
     def _load_config(self) -> dict:
         """Load Spotify API configuration from file."""
@@ -110,6 +116,9 @@ class SpotifyBackend(BaseBackend):
                 cache_path=str(cache_path)
             )
             
+            # Store auth manager for proactive token refresh
+            self._auth_manager = auth_manager
+            
             # Ensure cache file has the refresh token from config
             # This handles cases where cache is missing or has stale data
             cached_token = auth_manager.get_cached_token()
@@ -139,9 +148,20 @@ class SpotifyBackend(BaseBackend):
             try:
                 self._spotify.current_user()
                 logger.info("Initialized Spotify Web API client - authentication verified")
+                self._last_token_refresh = time.time()
             except Exception as auth_error:
-                logger.warning(f"Authentication test failed: {auth_error}. Token may need refresh.")
-                # The auth_manager should handle refresh automatically on next API call
+                error_str = str(auth_error).lower()
+                # Check if refresh token has expired
+                if 'invalid_grant' in error_str or 'refresh_token' in error_str and ('expired' in error_str or 'invalid' in error_str):
+                    logger.error(
+                        "Refresh token has expired. You need to re-authenticate:\n"
+                        f"  Run: python3 {Path(__file__).parent.parent / 'scripts' / 'spotify_oauth_setup.py'}\n"
+                        "This will generate a new refresh token. Refresh tokens expire after ~60 days of inactivity."
+                    )
+                    raise BackendError("Spotify refresh token has expired. Please run spotify_oauth_setup.py to re-authenticate.")
+                else:
+                    logger.warning(f"Authentication test failed: {auth_error}. Token may need refresh.")
+                    # The auth_manager should handle refresh automatically on next API call
                 
         except Exception as e:
             logger.error(f"Failed to initialize Spotify client: {e}")
@@ -175,6 +195,80 @@ class SpotifyBackend(BaseBackend):
             logger.debug("MPRIS interface not found (raspotify may not be running or MPRIS not enabled)")
         except Exception as e:
             logger.debug(f"Could not initialize MPRIS: {e}")
+    
+    def _start_token_refresh_thread(self):
+        """Start background thread for proactive token refresh."""
+        if not self._auth_manager:
+            return
+        
+        self._token_refresh_active = True
+        
+        def refresh_worker():
+            """Background worker that periodically refreshes tokens to keep them alive."""
+            while self._token_refresh_active:
+                try:
+                    # Wait for refresh interval (3 days)
+                    time.sleep(self._token_refresh_interval)
+                    
+                    if not self._token_refresh_active:
+                        break
+                    
+                    # Check if we need to refresh (every 3 days)
+                    current_time = time.time()
+                    if current_time - self._last_token_refresh >= self._token_refresh_interval:
+                        logger.info("Proactively refreshing Spotify token to prevent expiration...")
+                        try:
+                            # Force a token refresh by getting a new access token
+                            if self._auth_manager:
+                                # Get cached token to check if refresh is needed
+                                cached_token = self._auth_manager.get_cached_token()
+                                if cached_token and 'refresh_token' in cached_token:
+                                    # Force refresh by calling get_access_token with refresh
+                                    # This will use the refresh token to get a new access token
+                                    # and potentially update the refresh token
+                                    try:
+                                        # Make a simple API call which will trigger refresh if needed
+                                        if self._spotify:
+                                            self._spotify.current_user()
+                                            self._last_token_refresh = time.time()
+                                            logger.info("Successfully refreshed Spotify token")
+                                        else:
+                                            # Reinitialize if spotify client is None
+                                            self._init_spotify()
+                                            self._last_token_refresh = time.time()
+                                            logger.info("Successfully refreshed Spotify token (after reinit)")
+                                    except Exception as refresh_error:
+                                        error_str = str(refresh_error).lower()
+                                        if 'invalid_grant' in error_str or ('refresh_token' in error_str and ('expired' in error_str or 'invalid' in error_str)):
+                                            logger.error(
+                                                "Refresh token has expired during proactive refresh. "
+                                                "You need to re-authenticate:\n"
+                                                f"  Run: python3 {Path(__file__).parent.parent / 'scripts' / 'spotify_oauth_setup.py'}\n"
+                                                "This will generate a new refresh token."
+                                            )
+                                            # Stop refresh thread since token is expired
+                                            self._token_refresh_active = False
+                                        else:
+                                            logger.warning(f"Token refresh failed: {refresh_error}")
+                                else:
+                                    logger.warning("No refresh token available for proactive refresh")
+                        except Exception as e:
+                            logger.warning(f"Error during proactive token refresh: {e}")
+                except Exception as e:
+                    logger.error(f"Error in token refresh thread: {e}")
+                    # Continue running despite errors
+                    time.sleep(3600)  # Wait 1 hour before retrying on error
+        
+        self._token_refresh_thread = threading.Thread(target=refresh_worker, daemon=True)
+        self._token_refresh_thread.start()
+        logger.info("Started proactive token refresh thread (refreshes every 3 days)")
+    
+    def _stop_token_refresh_thread(self):
+        """Stop the token refresh thread."""
+        if self._token_refresh_active:
+            self._token_refresh_active = False
+            if self._token_refresh_thread and self._token_refresh_thread.is_alive():
+                logger.info("Stopping token refresh thread")
     
     def _check_raspotify_running(self) -> bool:
         """Check if raspotify service is running."""
@@ -779,6 +873,7 @@ class SpotifyBackend(BaseBackend):
                     try:
                         # Reinitialize Spotify client to trigger token refresh
                         self._init_spotify()
+                        self._last_token_refresh = time.time()
                         
                         # Get track count and pick a random starting position for shuffle
                         track_count = self._get_track_count(uri)
@@ -816,11 +911,21 @@ class SpotifyBackend(BaseBackend):
                         
                         return True
                     except Exception as refresh_error:
-                        play_auth_error_beep()
-                        raise BackendError(
-                            f"Authentication failed and token refresh unsuccessful: {refresh_error}. "
-                            "You may need to run spotify_oauth_setup.py again to re-authenticate."
-                        )
+                        error_str = str(refresh_error).lower()
+                        # Check if refresh token has expired
+                        if 'invalid_grant' in error_str or ('refresh_token' in error_str and ('expired' in error_str or 'invalid' in error_str)):
+                            play_auth_error_beep()
+                            raise BackendError(
+                                "Spotify refresh token has expired. You need to re-authenticate:\n"
+                                f"  Run: python3 {Path(__file__).parent.parent / 'scripts' / 'spotify_oauth_setup.py'}\n"
+                                "This will generate a new refresh token. Refresh tokens expire after ~60 days of inactivity."
+                            )
+                        else:
+                            play_auth_error_beep()
+                            raise BackendError(
+                                f"Authentication failed and token refresh unsuccessful: {refresh_error}. "
+                                "You may need to run spotify_oauth_setup.py again to re-authenticate."
+                            )
                 elif e.http_status == 404:
                     # 404 could mean device not found OR playlist not found
                     # Check if it's a device issue first
@@ -1047,6 +1152,9 @@ class SpotifyBackend(BaseBackend):
             
             # Stop monitoring thread
             self._stop_monitoring()
+            
+            # Stop token refresh thread
+            self._stop_token_refresh_thread()
             
             # Clear callback to avoid stale callbacks
             self.set_on_playback_ended_callback(None)
