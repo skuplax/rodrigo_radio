@@ -19,7 +19,7 @@ SyslogIdentifier=rodrigo_radio
 Environment="PYTHONUNBUFFERED=1"
 
 # Security settings
-NoNewPrivileges=true
+#NoNewPrivileges=true
 PrivateTmp=true
 
 [Install]

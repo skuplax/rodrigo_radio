@@ -245,13 +245,28 @@ class SpotifyBackend(BaseBackend):
         logger.debug("Both checks confirmed raspotify is not running")
         
         try:
+            # Try systemctl without sudo first (works if user has polkit permissions)
+            # This is necessary because the service runs with NoNewPrivileges=true
             logger.info("Attempting to start raspotify service...")
+            
+            # First try without sudo (works with polkit if configured)
             result = subprocess.run(
-                ['sudo', 'systemctl', 'start', 'raspotify'],
-                timeout=10,  # Increased timeout in case sudo needs password
+                ['systemctl', 'start', 'raspotify'],
+                timeout=10,
                 capture_output=True,
                 text=True
             )
+            
+            # If that fails, try with sudo as last resort (may fail due to NoNewPrivileges)
+            if result.returncode != 0:
+                logger.debug("System service start without sudo failed, trying with sudo...")
+                result = subprocess.run(
+                    ['sudo', 'systemctl', 'start', 'raspotify'],
+                    timeout=10,
+                    capture_output=True,
+                    text=True
+                )
+            
             if result.returncode == 0:
                 # Give the service time to start and register with Spotify
                 # Raspotify needs time to: start process, connect to Spotify, register as device
@@ -271,7 +286,7 @@ class SpotifyBackend(BaseBackend):
             else:
                 # Start command failed, but service might still be starting asynchronously
                 # or might have been triggered to start by systemd
-                error_msg = result.stderr or ''
+                error_msg = result.stderr or result.stdout or ''
                 logger.warning(f"raspotify start command failed (code {result.returncode}): {error_msg}")
                 logger.info("Checking if service starts anyway (may be starting asynchronously)...")
                 
@@ -289,10 +304,24 @@ class SpotifyBackend(BaseBackend):
                     return True
                 
                 # Check for specific errors that indicate we can't start it
-                if 'no new privileges' in error_msg.lower():
-                    logger.debug(
-                        "Cannot start raspotify service (no new privileges flag set). "
-                        "Service may need to be started manually or may already be running."
+                error_lower = error_msg.lower()
+                if 'no new privileges' in error_lower or 'prevent sudo' in error_lower:
+                    logger.error(
+                        "Cannot start raspotify service: The rodrigo_radio service has 'NoNewPrivileges=true' "
+                        "which prevents using sudo. Solutions:\n"
+                        "1. Remove 'NoNewPrivileges=true' from rodrigo_radio.service (less secure)\n"
+                        "2. Configure polkit to allow managing systemd services without sudo\n"
+                        "3. Configure sudoers for passwordless sudo (NOPASSWD) for systemctl commands\n"
+                        "4. Enable raspotify to start automatically: sudo systemctl enable raspotify\n"
+                        "5. Start raspotify manually: sudo systemctl start raspotify"
+                    )
+                elif 'permission denied' in error_lower or 'access denied' in error_lower:
+                    logger.error(
+                        "Cannot start raspotify service: Permission denied. "
+                        "The service requires root privileges. Solutions:\n"
+                        "1. Configure polkit to allow managing systemd services\n"
+                        "2. Enable raspotify to start automatically: sudo systemctl enable raspotify\n"
+                        "3. Start raspotify manually: sudo systemctl start raspotify"
                     )
                 return False
         except subprocess.TimeoutExpired:

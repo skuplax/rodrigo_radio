@@ -13,6 +13,7 @@ except ImportError:
     pass  # python-dotenv not required, but helpful
 
 from core.player_controller import PlayerController
+from core.supabase_log_handler import SupabaseLogHandler
 
 # Configure logging - use script directory
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -20,20 +21,42 @@ LOG_DIR = SCRIPT_DIR / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "player.log"
 
+# Create handlers
+handlers = [
+    logging.StreamHandler(sys.stdout)  # Always keep console output
+]
+
+# Global references
+controller: PlayerController = None
+supabase_log_handler = None  # Global reference for cleanup
+
+# Add Supabase handler (replaces file handler for zero SD card writes)
+supabase_handler = None
+try:
+    supabase_handler = SupabaseLogHandler(level=logging.INFO)
+    handlers.append(supabase_handler)
+    supabase_log_handler = supabase_handler  # Store for cleanup
+except Exception as e:
+    # Fallback to file handler if Supabase fails
+    print(f"Warning: Failed to initialize Supabase logging handler: {e}")
+    print("Falling back to file logging")
+    handlers.append(logging.FileHandler(LOG_FILE))
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S',
-    handlers=[
-        logging.FileHandler(LOG_FILE),
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=handlers,
+    force=True  # Override any existing configuration
 )
 
-logger = logging.getLogger(__name__)
+# Log initialization status after logging is configured
+if supabase_handler:
+    logging.info("Supabase logging handler initialized - logs will be sent to Supabase")
+else:
+    logging.warning("Using file logging (Supabase handler not available)")
 
-# Global controller instance
-controller: PlayerController = None
+logger = logging.getLogger(__name__)
 
 
 def signal_handler(signum, frame):
@@ -41,6 +64,12 @@ def signal_handler(signum, frame):
     logger.info(f"Received signal {signum}, shutting down...")
     if controller:
         controller.shutdown()
+    # Close Supabase log handler to flush remaining logs
+    if supabase_log_handler:
+        try:
+            supabase_log_handler.close()
+        except Exception:
+            pass
     sys.exit(0)
 
 
@@ -95,6 +124,12 @@ def main():
     finally:
         if controller:
             controller.shutdown()
+        # Close Supabase log handler to flush remaining logs
+        if supabase_log_handler:
+            try:
+                supabase_log_handler.close()
+            except Exception:
+                pass
 
 
 if __name__ == '__main__':
