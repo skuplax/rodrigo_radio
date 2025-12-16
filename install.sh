@@ -255,6 +255,25 @@ main() {
     
     print_info "Systemd service installed successfully!"
     
+    # Install polkit rule for managing raspotify service
+    echo ""
+    print_info "Installing polkit rule for raspotify service management..."
+    POLKIT_RULE="rodrigo_radio_polkit.rules"
+    if [ -f "$POLKIT_RULE" ]; then
+        sudo mkdir -p /etc/polkit-1/rules.d
+        # Create polkit rule with current user (from service file or current user)
+        SERVICE_USER=$(grep "^User=" "$SERVICE_FILE" | cut -d'=' -f2 || echo "$USER")
+        sudo sed "s/subject.user == \"skayflakes\"/subject.user == \"$SERVICE_USER\"/" "$POLKIT_RULE" | \
+            sudo tee /etc/polkit-1/rules.d/50-rodrigo-radio.rules > /dev/null
+        sudo chmod 644 /etc/polkit-1/rules.d/50-rodrigo-radio.rules
+        sudo chown root:root /etc/polkit-1/rules.d/50-rodrigo-radio.rules
+        print_info "Polkit rule installed successfully for user: $SERVICE_USER"
+        print_info "The rodrigo_radio service can now manage raspotify without sudo (NoNewPrivileges=true compatible)"
+    else
+        print_warn "Polkit rule file $POLKIT_RULE not found. Skipping polkit installation."
+        print_warn "The service may need sudo to manage raspotify, which won't work with NoNewPrivileges=true"
+    fi
+    
     # Ask if user wants to enable and start the service
     echo ""
     read -p "Enable and start the rodrigo_radio service now? (y/N) " -n 1 -r

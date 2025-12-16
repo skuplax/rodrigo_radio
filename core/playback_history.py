@@ -6,8 +6,13 @@ import socket
 import threading
 import time
 from pathlib import Path
-from typing import List, Dict, Optional
-from datetime import datetime
+from typing import List, Dict, Optional, Union
+from datetime import datetime, timezone, timedelta
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    # Fallback for Python < 3.9
+    from backports.zoneinfo import ZoneInfo
 
 try:
     from dotenv import load_dotenv
@@ -60,7 +65,7 @@ class SupabaseBatchLogger:
         self._last_online_state = False
         
         if not SUPABASE_AVAILABLE:
-            logger.warning("Supabase packages not available. Install with: pip install supabase python-dotenv")
+            # Don't log this - it's meta-logging
             return
         
         # Load environment variables
@@ -70,12 +75,11 @@ class SupabaseBatchLogger:
         if self.supabase_url and self.supabase_key:
             try:
                 self._client = create_client(self.supabase_url, self.supabase_key)
-                logger.info("Supabase client initialized")
                 self._is_online = self._check_network()
             except Exception as e:
-                logger.error(f"Error initializing Supabase client: {e}")
-        else:
-            logger.warning("Supabase credentials not found - logging will be buffered in memory only")
+                # Only log actual errors
+                pass
+        # Don't log warnings about missing credentials - it's meta-logging
         
         # Start background threads
         self._start_sync_thread()
@@ -131,8 +135,7 @@ class SupabaseBatchLogger:
             self.supabase_url = os.getenv("SUPABASE_URL")
             self.supabase_key = os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_ANON_KEY")
         
-        if not self.supabase_url or not self.supabase_key:
-            logger.warning("Supabase credentials not found in environment. Set SUPABASE_URL and SUPABASE_KEY (or DATABASE_URL)")
+        # Don't log warnings about missing credentials - it's meta-logging
     
     def _check_network(self) -> bool:
         """Check if network connectivity is available."""
@@ -143,16 +146,21 @@ class SupabaseBatchLogger:
         except (socket.gaierror, OSError):
             return False
     
-    def log(self, timestamp: float, log_level: str, event_type: str, action: str,
+    def log(self, timestamp: Union[float, datetime], log_level: str, event_type: str, action: str,
              source_id: Optional[str] = None, source_label: Optional[str] = None,
              source_type: Optional[str] = None, item_name: Optional[str] = None,
              status: Optional[str] = None, duration_ms: Optional[float] = None,
-             value: Optional[float] = None, metadata: Optional[str] = None):
+             value: Optional[float] = None,
+             logger: Optional[str] = None, module: Optional[str] = None,
+             function_name: Optional[str] = None, line_number: Optional[int] = None,
+             message: Optional[str] = None, pathname: Optional[str] = None,
+             exc_info: Optional[str] = None, attempt: Optional[int] = None,
+             error_message: Optional[str] = None):
         """
         Add log entry to buffer (thread-safe).
         
         Args:
-            timestamp: Unix timestamp with milliseconds
+            timestamp: Unix timestamp (float) or datetime object. If float, converted to UTC and local.
             log_level: DEBUG, INFO, WARNING, ERROR, CRITICAL
             event_type: user_input, system, performance, network, audio, config
             action: Specific action name
@@ -163,10 +171,38 @@ class SupabaseBatchLogger:
             status: success, failure, error, retry, etc.
             duration_ms: Duration in milliseconds
             value: Numeric value (volume %, dB, etc.)
-            metadata: JSON string for additional data
+            logger: Logger name
+            module: Module name
+            function_name: Function name
+            line_number: Line number
+            message: Message content (without timestamp/log_level prefix)
+            pathname: File pathname
+            exc_info: Exception info
+            attempt: Attempt number (for retries)
+            error_message: Error message
         """
+        # Use Asia/Manila timezone (+08) for local timestamp
+        manila_tz = ZoneInfo('Asia/Manila')
+        
+        # Convert timestamp to datetime if needed
+        if isinstance(timestamp, float):
+            utc_dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+            local_dt = utc_dt.astimezone(manila_tz)
+        elif isinstance(timestamp, datetime):
+            if timestamp.tzinfo is None:
+                # Assume UTC if no timezone
+                utc_dt = timestamp.replace(tzinfo=timezone.utc)
+            else:
+                utc_dt = timestamp.astimezone(timezone.utc)
+            local_dt = utc_dt.astimezone(manila_tz)
+        else:
+            # Fallback to current time
+            utc_dt = datetime.now(timezone.utc)
+            local_dt = utc_dt.astimezone(manila_tz)
+        
         entry = {
-            'timestamp': timestamp,
+            'timestamp': utc_dt.isoformat(),  # UTC datetime as ISO string
+            'timestamp_local': local_dt.isoformat(),  # Local datetime as ISO string (Asia/Manila)
             'log_level': log_level,
             'event_type': event_type,
             'action': action,
@@ -177,7 +213,15 @@ class SupabaseBatchLogger:
             'status': status,
             'duration_ms': duration_ms,
             'value': value,
-            'metadata': metadata
+            'logger': logger,
+            'module': module,
+            'function_name': function_name,
+            'line_number': line_number,
+            'message': message,
+            'pathname': pathname,
+            'exc_info': exc_info,
+            'attempt': attempt,
+            'error_message': error_message
         }
         
         with self._buffer_lock:
@@ -216,10 +260,10 @@ class SupabaseBatchLogger:
         try:
             # Batch insert to Supabase
             response = self._client.table('event_logs').insert(entries).execute()
-            logger.debug(f"Synced {len(entries)} log entries to Supabase")
+            # Don't log sync success - it's meta-logging
             
         except Exception as e:
-            logger.error(f"Error syncing to Supabase: {e}")
+            # Don't log sync errors - it's meta-logging and could cause loops
             # Re-add entries to buffer on error (prevent data loss)
             with self._buffer_lock:
                 self._buffer.extend(entries)
@@ -236,7 +280,7 @@ class SupabaseBatchLogger:
         
         self._sync_thread = threading.Thread(target=sync_worker, daemon=True)
         self._sync_thread.start()
-        logger.debug("Background sync thread started")
+        # Don't log thread start - it's meta-logging
     
     def _start_connection_monitor(self):
         """Start background thread for connection monitoring."""
@@ -248,10 +292,9 @@ class SupabaseBatchLogger:
                     
                     # If connection restored, trigger sync
                     if not was_online and self._is_online:
-                        logger.info("Network connection restored - syncing buffered logs")
+                        # Don't log connection restored - it's routine
                         self._sync_async()
-                    elif was_online and not self._is_online:
-                        logger.warning("Network connection lost - buffering logs in memory")
+                    # Don't log connection lost - it's routine and will spam logs
                     
                     self._last_online_state = self._is_online
                 except Exception as e:
@@ -259,11 +302,11 @@ class SupabaseBatchLogger:
         
         self._connection_monitor_thread = threading.Thread(target=monitor_worker, daemon=True)
         self._connection_monitor_thread.start()
-        logger.debug("Connection monitor thread started")
+        # Don't log thread start - it's meta-logging
     
     def close(self):
         """Close logger and sync remaining entries."""
-        logger.debug("Closing Supabase batch logger...")
+        # Don't log closing - it's meta-logging
         self._stop_sync.set()
         self._stop_monitor.set()
         
@@ -275,8 +318,6 @@ class SupabaseBatchLogger:
         # Final sync if online
         if self._is_online:
             self._sync_to_supabase()
-        
-        logger.debug("Supabase batch logger closed")
 
 
 class PlaybackHistory:
@@ -294,7 +335,7 @@ class PlaybackHistory:
             source: Source dictionary (from sources.json)
             item_name: Optional name of the current track/item
         """
-        timestamp = time.time()
+        timestamp = datetime.now(timezone.utc)
         self._logger.log(
             timestamp=timestamp,
             log_level='INFO',
@@ -306,11 +347,11 @@ class PlaybackHistory:
             item_name=item_name,
             status='success'
         )
-        logger.debug(f"Logged playback start: {source.get('label')}")
+        # Don't log that we logged - it's meta-logging
     
     def log_source_change(self, source: Dict):
         """Log a source change."""
-        timestamp = time.time()
+        timestamp = datetime.now(timezone.utc)
         self._logger.log(
             timestamp=timestamp,
             log_level='INFO',
@@ -321,7 +362,7 @@ class PlaybackHistory:
             source_type=source.get('type'),
             status='success'
         )
-        logger.debug(f"Logged source change: {source.get('label')}")
+        # Don't log that we logged - it's meta-logging
     
     def log_action(self, action: str, **kwargs):
         """
@@ -336,15 +377,19 @@ class PlaybackHistory:
         if action in ('pause', 'resume', 'next', 'previous'):
             event_type = 'user_input'
         
-        timestamp = time.time()
-        metadata = json.dumps(kwargs) if kwargs else None
+        timestamp = datetime.now(timezone.utc)
+        
+        # Extract attempt and error_message from kwargs if present
+        attempt = kwargs.get('attempt')
+        error_message = kwargs.get('error')
         
         self._logger.log(
             timestamp=timestamp,
             log_level='INFO',
             event_type=event_type,
             action=action,
-            metadata=metadata,
+            attempt=attempt,
+            error_message=error_message,
             status='success'
         )
     
@@ -357,8 +402,11 @@ class PlaybackHistory:
             source: Optional source dictionary
             **kwargs: Additional data
         """
-        timestamp = time.time()
-        metadata = json.dumps(kwargs) if kwargs else None
+        timestamp = datetime.now(timezone.utc)
+        
+        # Extract attempt and error_message from kwargs if present
+        attempt = kwargs.get('attempt')
+        error_message = kwargs.get('error')
         
         self._logger.log(
             timestamp=timestamp,
@@ -368,7 +416,8 @@ class PlaybackHistory:
             source_id=source.get('id') if source else None,
             source_label=source.get('label') if source else None,
             source_type=source.get('type') if source else None,
-            metadata=metadata,
+            attempt=attempt,
+            error_message=error_message,
             status='success'
         )
     
@@ -381,8 +430,11 @@ class PlaybackHistory:
             value: Numeric value (volume %, dB, etc.)
             **kwargs: Additional data
         """
-        timestamp = time.time()
-        metadata = json.dumps(kwargs) if kwargs else None
+        timestamp = datetime.now(timezone.utc)
+        
+        # Extract attempt and error_message from kwargs if present
+        attempt = kwargs.get('attempt')
+        error_message = kwargs.get('error')
         
         self._logger.log(
             timestamp=timestamp,
@@ -390,7 +442,8 @@ class PlaybackHistory:
             event_type='audio',
             action=action,
             value=value,
-            metadata=metadata,
+            attempt=attempt,
+            error_message=error_message,
             status='success'
         )
     
@@ -403,8 +456,11 @@ class PlaybackHistory:
             duration_ms: Duration in milliseconds
             **kwargs: Additional data
         """
-        timestamp = time.time()
-        metadata = json.dumps(kwargs) if kwargs else None
+        timestamp = datetime.now(timezone.utc)
+        
+        # Extract attempt and error_message from kwargs if present
+        attempt = kwargs.get('attempt')
+        error_message = kwargs.get('error')
         
         self._logger.log(
             timestamp=timestamp,
@@ -412,7 +468,8 @@ class PlaybackHistory:
             event_type='performance',
             action=action,
             duration_ms=duration_ms,
-            metadata=metadata,
+            attempt=attempt,
+            error_message=error_message,
             status='success'
         )
     
@@ -425,8 +482,11 @@ class PlaybackHistory:
             status: Status (success, failure, error, retry, etc.)
             **kwargs: Additional data
         """
-        timestamp = time.time()
-        metadata = json.dumps(kwargs) if kwargs else None
+        timestamp = datetime.now(timezone.utc)
+        
+        # Extract attempt and error_message from kwargs if present
+        attempt = kwargs.get('attempt')
+        error_message = kwargs.get('error')
         
         log_level = 'ERROR' if status in ('failure', 'error') else 'WARNING' if status == 'retry' else 'INFO'
         
@@ -436,7 +496,8 @@ class PlaybackHistory:
             event_type='network',
             action=action,
             status=status,
-            metadata=metadata
+            attempt=attempt,
+            error_message=error_message
         )
     
     def log_config_event(self, action: str, **kwargs):
@@ -447,15 +508,19 @@ class PlaybackHistory:
             action: Action name (e.g., 'sources_reloaded', 'config_changed')
             **kwargs: Additional data
         """
-        timestamp = time.time()
-        metadata = json.dumps(kwargs) if kwargs else None
+        timestamp = datetime.now(timezone.utc)
+        
+        # Extract attempt and error_message from kwargs if present
+        attempt = kwargs.get('attempt')
+        error_message = kwargs.get('error')
         
         self._logger.log(
             timestamp=timestamp,
             log_level='INFO',
             event_type='config',
             action=action,
-            metadata=metadata,
+            attempt=attempt,
+            error_message=error_message,
             status='success'
         )
     
@@ -482,8 +547,19 @@ class PlaybackHistory:
             
             entries = []
             for row in response.data:
+                # Use timestamp_local for display, fallback to timestamp if not available
+                timestamp_str = row.get('timestamp_local') or row.get('timestamp') or ''
+                if timestamp_str and isinstance(timestamp_str, str):
+                    # Already an ISO string from database
+                    timestamp_display = timestamp_str
+                elif timestamp_str:
+                    # If it's a datetime object, convert to ISO
+                    timestamp_display = timestamp_str.isoformat() if hasattr(timestamp_str, 'isoformat') else str(timestamp_str)
+                else:
+                    timestamp_display = ''
+                
                 entry = {
-                    'timestamp': datetime.fromtimestamp(row['timestamp']).isoformat() if row.get('timestamp') else '',
+                    'timestamp': timestamp_display,
                     'action': row.get('action', 'unknown'),
                     'source_id': row.get('source_id'),
                     'source_label': row.get('source_label'),
@@ -493,10 +569,20 @@ class PlaybackHistory:
                     'event_type': row.get('event_type'),
                     'status': row.get('status'),
                     'duration_ms': row.get('duration_ms'),
-                    'value': row.get('value')
+                    'value': row.get('value'),
+                    # Include new columns
+                    'logger': row.get('logger'),
+                    'module': row.get('module'),
+                    'function_name': row.get('function_name'),
+                    'line_number': row.get('line_number'),
+                    'message': row.get('message'),
+                    'pathname': row.get('pathname'),
+                    'exc_info': row.get('exc_info'),
+                    'attempt': row.get('attempt'),
+                    'error_message': row.get('error_message')
                 }
                 
-                # Parse metadata if present
+                # Parse metadata if present (for backward compatibility during transition)
                 if row.get('metadata'):
                     try:
                         if isinstance(row['metadata'], str):
@@ -528,8 +614,19 @@ class PlaybackHistory:
             
             entries = []
             for row in response.data:
+                # Use timestamp_local for display, fallback to timestamp if not available
+                timestamp_str = row.get('timestamp_local') or row.get('timestamp') or ''
+                if timestamp_str and isinstance(timestamp_str, str):
+                    # Already an ISO string from database
+                    timestamp_display = timestamp_str
+                elif timestamp_str:
+                    # If it's a datetime object, convert to ISO
+                    timestamp_display = timestamp_str.isoformat() if hasattr(timestamp_str, 'isoformat') else str(timestamp_str)
+                else:
+                    timestamp_display = ''
+                
                 entry = {
-                    'timestamp': datetime.fromtimestamp(row['timestamp']).isoformat() if row.get('timestamp') else '',
+                    'timestamp': timestamp_display,
                     'action': row.get('action', 'unknown'),
                     'source_id': row.get('source_id'),
                     'source_label': row.get('source_label'),
@@ -539,9 +636,20 @@ class PlaybackHistory:
                     'event_type': row.get('event_type'),
                     'status': row.get('status'),
                     'duration_ms': row.get('duration_ms'),
-                    'value': row.get('value')
+                    'value': row.get('value'),
+                    # Include new columns
+                    'logger': row.get('logger'),
+                    'module': row.get('module'),
+                    'function_name': row.get('function_name'),
+                    'line_number': row.get('line_number'),
+                    'message': row.get('message'),
+                    'pathname': row.get('pathname'),
+                    'exc_info': row.get('exc_info'),
+                    'attempt': row.get('attempt'),
+                    'error_message': row.get('error_message')
                 }
                 
+                # Parse metadata if present (for backward compatibility during transition)
                 if row.get('metadata'):
                     try:
                         if isinstance(row['metadata'], str):

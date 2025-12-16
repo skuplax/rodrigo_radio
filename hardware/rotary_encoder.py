@@ -414,7 +414,8 @@ class VolumeController:
                 
                 if result.returncode == 0:
                     self._current_volume = volume
-                    logger.info(f"Volume set to {volume}% ({db_value:.2f}dB, max: {self.max_db}dB)")
+                    # Volume logging is handled by player_controller via callback
+                    # No need to log here to avoid duplicate logs
                     return True
                 else:
                     logger.error(f"Failed to set volume: {result.stderr}")
@@ -447,7 +448,7 @@ class VolumeController:
                 timeout=2
             )
             if result.returncode == 0:
-                logger.info("Audio muted")
+                # Mute logging is handled by player_controller via callback
                 return True
             return False
         except Exception as e:
@@ -464,7 +465,7 @@ class VolumeController:
                 timeout=2
             )
             if result.returncode == 0:
-                logger.info("Audio unmuted")
+                # Unmute logging is handled by player_controller via callback
                 return True
             return False
         except Exception as e:
@@ -637,12 +638,23 @@ class RotaryEncoder:
     def _rotate_clockwise(self):
         """Handle clockwise rotation (volume up)."""
         logger.debug("Rotary encoder: clockwise rotation (volume up)")
-        self.volume_controller.adjust_volume(self.volume_step)
+        
+        # Check if already at max volume before trying to increase
         current_volume = self.volume_controller.get_volume()
+        if current_volume >= 100:
+            # Already at max, play beep to indicate limit reached
+            from utils.sound_feedback import play_max_volume_beep
+            play_max_volume_beep()
+            logger.debug("Volume already at maximum, playing beep")
+            return
+        
+        # Not at max, proceed with volume increase
+        self.volume_controller.adjust_volume(self.volume_step)
+        new_volume = self.volume_controller.get_volume()
         
         if self.on_volume_change:
             try:
-                self.on_volume_change(current_volume)
+                self.on_volume_change(new_volume)
             except Exception as e:
                 logger.error(f"Error in volume change callback: {e}")
     

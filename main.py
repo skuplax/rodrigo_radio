@@ -50,11 +50,7 @@ logging.basicConfig(
     force=True  # Override any existing configuration
 )
 
-# Log initialization status after logging is configured
-if supabase_handler:
-    logging.info("Supabase logging handler initialized - logs will be sent to Supabase")
-else:
-    logging.warning("Using file logging (Supabase handler not available)")
+# Don't log initialization status - it's meta-logging
 
 logger = logging.getLogger(__name__)
 
@@ -98,8 +94,8 @@ def main():
             'volume_step': 2,  # KY-040 on GPIO 5 (CLK) and 6 (DT)
             # Time-based volume limiting dB offsets:
             'time_limit_day_db': 0.0,        # Day hours (9am-5pm)
-            'time_limit_evening_db': -6.0,   # Evening transition (6pm-7pm, 8am-9am)
-            'time_limit_night_db': -12.0     # Night hours (7pm-7am)
+            'time_limit_evening_db': -3.0,   # Evening transition (6pm-7pm, 8am-9am)
+            'time_limit_night_db': -6.0     # Night hours (7pm-7am)
         }
         
         controller = PlayerController(

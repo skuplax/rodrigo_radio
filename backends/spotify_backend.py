@@ -61,11 +61,18 @@ class SpotifyBackend(BaseBackend):
         self._monitoring_active = False
         self._monitoring_thread: Optional[threading.Thread] = None
         self._was_playing = False  # Track previous playing state to detect natural end
+        self._last_track_item_id: Optional[str] = None  # Track the last track's Spotify ID to detect changes
         self._auth_manager: Optional[SpotifyOAuth] = None  # Store auth manager for proactive refresh
         self._token_refresh_thread: Optional[threading.Thread] = None
         self._token_refresh_active = False
         self._last_token_refresh = 0
         self._token_refresh_interval = 3 * 24 * 3600  # Refresh every 3 days (tokens expire after ~60 days of inactivity, so 3 days provides good safety margin)
+        self._last_api_call = 0  # Track last API call time for rate limiting
+        self._min_api_call_interval = 0.2  # Minimum seconds between API calls (200ms)
+        self._rate_limit_backoff = 1.0  # Current backoff delay for rate limits (starts at 1 second)
+        self._max_rate_limit_backoff = 60.0  # Maximum backoff delay (60 seconds)
+        self._last_raspotify_restart = 0  # Track last restart time to avoid restart loops
+        self._raspotify_restart_cooldown = 30.0  # Minimum seconds between restarts (30 seconds)
         
         if not SPOTIPY_AVAILABLE:
             raise BackendError("spotipy is not installed. Install it with: pip3 install --user --break-system-packages spotipy")
@@ -195,6 +202,179 @@ class SpotifyBackend(BaseBackend):
             logger.debug("MPRIS interface not found (raspotify may not be running or MPRIS not enabled)")
         except Exception as e:
             logger.debug(f"Could not initialize MPRIS: {e}")
+    
+    def _restart_raspotify_service(self) -> bool:
+        """
+        Restart the raspotify service.
+        
+        Returns:
+            True if service was restarted successfully, False otherwise
+        """
+        current_time = time.time()
+        
+        # Check cooldown to avoid restart loops
+        if current_time - self._last_raspotify_restart < self._raspotify_restart_cooldown:
+            logger.debug(f"Raspotify restart cooldown active (restarted {current_time - self._last_raspotify_restart:.1f}s ago)")
+            return False
+        
+        logger.info("Restarting raspotify service to resolve connection issues...")
+        
+        try:
+            # Stop the service first
+            result = subprocess.run(
+                ['systemctl', 'stop', 'raspotify'],
+                timeout=10,
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode != 0:
+                logger.warning(f"Failed to stop raspotify: {result.stderr or result.stdout}")
+                # Continue anyway - might already be stopped
+            
+            # Wait a moment for it to fully stop
+            time.sleep(1.0)
+            
+            # Start the service
+            result = subprocess.run(
+                ['systemctl', 'start', 'raspotify'],
+                timeout=10,
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                # Give the service time to start and register with Spotify
+                logger.info("Waiting for raspotify to restart and register with Spotify API...")
+                for i in range(5):  # Wait up to 5 seconds
+                    time.sleep(1)
+                    if self._check_raspotify_running():
+                        logger.info(f"Successfully restarted raspotify service (verified after {i+1}s)")
+                        self._last_raspotify_restart = time.time()
+                        # Reset device ID so it will be re-discovered
+                        self._device_id = None
+                        self._last_device_check = 0
+                        return True
+                
+                # Final check
+                if self._check_raspotify_running():
+                    logger.info("Successfully restarted raspotify service (verified after 5s)")
+                    self._last_raspotify_restart = time.time()
+                    self._device_id = None
+                    self._last_device_check = 0
+                    return True
+                else:
+                    logger.warning("raspotify restart command succeeded but service is not active after 5s")
+                    return False
+            else:
+                error_msg = result.stderr or result.stdout or ''
+                logger.warning(f"Failed to restart raspotify service: {error_msg}")
+                if "Authentication" in error_msg or "permission" in error_msg.lower():
+                    logger.error("Permission denied. Ensure polkit rule is installed: /etc/polkit-1/rules.d/50-rodrigo-radio.rules")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            logger.warning("Timeout while restarting raspotify service")
+            return False
+        except FileNotFoundError:
+            logger.debug("systemctl not found - cannot restart raspotify service")
+            return False
+        except Exception as e:
+            logger.warning(f"Error restarting raspotify service: {e}")
+            return False
+    
+    def _handle_rate_limit(self, error: Exception) -> bool:
+        """
+        Handle rate limit errors (429) with exponential backoff.
+        
+        Args:
+            error: The exception that was raised
+            
+        Returns:
+            True if rate limit was handled and we should retry, False otherwise
+        """
+        error_str = str(error).lower()
+        is_rate_limit = (
+            '429' in error_str or 
+            'rate' in error_str and 'limit' in error_str or
+            'too many requests' in error_str
+        )
+        
+        if is_rate_limit:
+            logger.warning(
+                f"Rate limit hit. Waiting {self._rate_limit_backoff:.1f}s before retry. "
+                f"Consider reducing API call frequency."
+            )
+            time.sleep(self._rate_limit_backoff)
+            # Exponential backoff: double the delay, up to max
+            self._rate_limit_backoff = min(
+                self._rate_limit_backoff * 2,
+                self._max_rate_limit_backoff
+            )
+            return True
+        
+        # Reset backoff on successful calls (will be reset when API call succeeds)
+        return False
+    
+    def _throttle_api_call(self):
+        """Ensure minimum time between API calls to avoid rate limiting."""
+        current_time = time.time()
+        time_since_last_call = current_time - self._last_api_call
+        
+        if time_since_last_call < self._min_api_call_interval:
+            sleep_time = self._min_api_call_interval - time_since_last_call
+            time.sleep(sleep_time)
+        
+        self._last_api_call = time.time()
+    
+    def _api_call_with_retry(self, func, *args, max_retries=3, **kwargs):
+        """
+        Execute an API call with rate limit handling and retries.
+        
+        Args:
+            func: The API function to call
+            *args: Positional arguments for the function
+            max_retries: Maximum number of retries for rate limits
+            **kwargs: Keyword arguments for the function
+            
+        Returns:
+            The result of the API call
+            
+        Raises:
+            The original exception if not a rate limit error or max retries exceeded
+        """
+        for attempt in range(max_retries + 1):
+            try:
+                self._throttle_api_call()
+                result = func(*args, **kwargs)
+                # Reset backoff on success
+                self._rate_limit_backoff = 1.0
+                return result
+            except spotipy.exceptions.SpotifyException as e:
+                if e.http_status == 429 or self._handle_rate_limit(e):
+                    if attempt < max_retries:
+                        logger.debug(f"Rate limit on attempt {attempt + 1}/{max_retries + 1}, retrying...")
+                        continue
+                    else:
+                        logger.error(f"Max retries ({max_retries}) reached for rate limit")
+                        raise
+                else:
+                    # Not a rate limit error, re-raise
+                    raise
+            except Exception as e:
+                if self._handle_rate_limit(e):
+                    if attempt < max_retries:
+                        logger.debug(f"Rate limit on attempt {attempt + 1}/{max_retries + 1}, retrying...")
+                        continue
+                    else:
+                        logger.error(f"Max retries ({max_retries}) reached for rate limit")
+                        raise
+                else:
+                    # Not a rate limit error, re-raise
+                    raise
+        
+        # Should never reach here, but just in case
+        raise Exception("Unexpected error in _api_call_with_retry")
     
     def _start_token_refresh_thread(self):
         """Start background thread for proactive token refresh."""
@@ -339,27 +519,17 @@ class SpotifyBackend(BaseBackend):
         logger.debug("Both checks confirmed raspotify is not running")
         
         try:
-            # Try systemctl without sudo first (works if user has polkit permissions)
+            # Use systemctl without sudo (requires polkit configuration)
             # This is necessary because the service runs with NoNewPrivileges=true
+            # Polkit rule should be installed at /etc/polkit-1/rules.d/50-rodrigo-radio.rules
             logger.info("Attempting to start raspotify service...")
             
-            # First try without sudo (works with polkit if configured)
             result = subprocess.run(
                 ['systemctl', 'start', 'raspotify'],
                 timeout=10,
                 capture_output=True,
                 text=True
             )
-            
-            # If that fails, try with sudo as last resort (may fail due to NoNewPrivileges)
-            if result.returncode != 0:
-                logger.debug("System service start without sudo failed, trying with sudo...")
-                result = subprocess.run(
-                    ['sudo', 'systemctl', 'start', 'raspotify'],
-                    timeout=10,
-                    capture_output=True,
-                    text=True
-                )
             
             if result.returncode == 0:
                 # Give the service time to start and register with Spotify
@@ -382,6 +552,8 @@ class SpotifyBackend(BaseBackend):
                 # or might have been triggered to start by systemd
                 error_msg = result.stderr or result.stdout or ''
                 logger.warning(f"raspotify start command failed (code {result.returncode}): {error_msg}")
+                if "Authentication" in error_msg or "permission" in error_msg.lower():
+                    logger.error("Permission denied. Ensure polkit rule is installed: /etc/polkit-1/rules.d/50-rodrigo-radio.rules")
                 logger.info("Checking if service starts anyway (may be starting asynchronously)...")
                 
                 # Wait and check if service becomes available anyway
@@ -403,17 +575,16 @@ class SpotifyBackend(BaseBackend):
                     logger.error(
                         "Cannot start raspotify service: The rodrigo_radio service has 'NoNewPrivileges=true' "
                         "which prevents using sudo. Solutions:\n"
-                        "1. Remove 'NoNewPrivileges=true' from rodrigo_radio.service (less secure)\n"
-                        "2. Configure polkit to allow managing systemd services without sudo\n"
-                        "3. Configure sudoers for passwordless sudo (NOPASSWD) for systemctl commands\n"
-                        "4. Enable raspotify to start automatically: sudo systemctl enable raspotify\n"
-                        "5. Start raspotify manually: sudo systemctl start raspotify"
+                        "1. Configure polkit (recommended): Install /etc/polkit-1/rules.d/50-rodrigo-radio.rules\n"
+                        "2. Enable raspotify to start automatically: sudo systemctl enable raspotify\n"
+                        "3. Start raspotify manually: sudo systemctl start raspotify\n"
+                        "4. Remove 'NoNewPrivileges=true' from rodrigo_radio.service (less secure)"
                     )
                 elif 'permission denied' in error_lower or 'access denied' in error_lower:
                     logger.error(
                         "Cannot start raspotify service: Permission denied. "
                         "The service requires root privileges. Solutions:\n"
-                        "1. Configure polkit to allow managing systemd services\n"
+                        "1. Configure polkit (recommended): Install /etc/polkit-1/rules.d/50-rodrigo-radio.rules\n"
                         "2. Enable raspotify to start automatically: sudo systemctl enable raspotify\n"
                         "3. Start raspotify manually: sudo systemctl start raspotify"
                     )
@@ -460,7 +631,7 @@ class SpotifyBackend(BaseBackend):
                 logger.info(f"Using manually configured device_id: {device_id}")
                 # Verify it's still available
                 try:
-                    devices = self._spotify.devices()
+                    devices = self._api_call_with_retry(self._spotify.devices)
                     device_list = devices.get('devices', [])
                     for device in device_list:
                         if device.get('id') == device_id:
@@ -477,13 +648,13 @@ class SpotifyBackend(BaseBackend):
                     # Continue searching by name/keywords
             
             try:
-                devices = self._spotify.devices()
+                devices = self._api_call_with_retry(self._spotify.devices)
             except spotipy.exceptions.SpotifyException as e:
                 if e.http_status == 401:
                     logger.warning("Received 401 Unauthorized while finding device - attempting token refresh...")
                     try:
                         self._init_spotify()
-                        devices = self._spotify.devices()
+                        devices = self._api_call_with_retry(self._spotify.devices)
                     except Exception as refresh_error:
                         logger.error(f"Failed to refresh token: {refresh_error}")
                         return None
@@ -519,10 +690,22 @@ class SpotifyBackend(BaseBackend):
             if retry and self._check_raspotify_running():
                 if self._device_activation_attempts < self._max_activation_attempts:
                     self._device_activation_attempts += 1
-                    delay = self._activation_retry_delay * (2 ** (self._device_activation_attempts - 1))
+                    
+                    # On first attempt, try restarting raspotify to refresh connection
+                    if self._device_activation_attempts == 1:
+                        logger.info("Device not found - attempting to restart raspotify to refresh connection...")
+                        if self._restart_raspotify_service():
+                            # Wait a bit longer after restart for device to register
+                            delay = 5.0
+                            logger.info(f"Raspotify restarted, waiting {delay:.1f}s for device to register...")
+                        else:
+                            delay = self._activation_retry_delay
+                    else:
+                        delay = self._activation_retry_delay * (2 ** (self._device_activation_attempts - 2))
+                    
                     logger.info(
                         f"Raspotify device not found in API (attempt {self._device_activation_attempts}/{self._max_activation_attempts}). "
-                        f"Raspotify is running - waiting {delay:.1f}s for it to register with Spotify..."
+                        f"Waiting {delay:.1f}s before retry..."
                     )
                     play_retry_beep()
                     time.sleep(delay)
@@ -662,7 +845,7 @@ class SpotifyBackend(BaseBackend):
         
         try:
             # Get current device list
-            devices = self._spotify.devices()
+            devices = self._api_call_with_retry(self._spotify.devices)
             device_list = devices.get('devices', [])
             
             # Find our device and check if it's active
@@ -676,7 +859,11 @@ class SpotifyBackend(BaseBackend):
                         # Device is inactive, transfer playback to it
                         logger.info(f"Device {self._device_id} is inactive, transferring playback to it...")
                         try:
-                            self._spotify.transfer_playback(device_id=self._device_id, force_play=False)
+                            self._api_call_with_retry(
+                                self._spotify.transfer_playback,
+                                device_id=self._device_id,
+                                force_play=False
+                            )
                             # Give it a moment to transfer
                             time.sleep(0.5)
                             logger.info("Successfully transferred playback to device")
@@ -684,9 +871,28 @@ class SpotifyBackend(BaseBackend):
                         except spotipy.exceptions.SpotifyException as e:
                             if e.http_status == 404:
                                 logger.warning("Device not found when trying to transfer playback - device may have disconnected")
-                                # Force device refresh
-                                self._device_id = None
-                                self._last_device_check = 0
+                                # Try restarting raspotify to refresh connection
+                                logger.info("Attempting to restart raspotify to resolve device connection issue...")
+                                if self._restart_raspotify_service():
+                                    # Wait for device to reappear
+                                    time.sleep(3.0)
+                                    # Force device refresh
+                                    self._device_id = None
+                                    self._last_device_check = 0
+                                else:
+                                    # Force device refresh anyway
+                                    self._device_id = None
+                                    self._last_device_check = 0
+                                return False
+                            elif e.http_status == 429:
+                                logger.warning("Rate limit hit while transferring playback - attempting to restart raspotify...")
+                                # Try restarting raspotify when hitting rate limits during device activation
+                                if self._restart_raspotify_service():
+                                    # Wait for device to reappear after restart
+                                    time.sleep(3.0)
+                                    # Force device refresh
+                                    self._device_id = None
+                                    self._last_device_check = 0
                                 return False
                             else:
                                 logger.warning(f"Failed to transfer playback to device: {e}")
@@ -694,6 +900,11 @@ class SpotifyBackend(BaseBackend):
             
             # Device not found in list - might have disconnected
             logger.warning(f"Device {self._device_id} not found in device list - device may have disconnected")
+            # Try restarting raspotify to refresh connection
+            logger.info("Attempting to restart raspotify to resolve device connection issue...")
+            if self._restart_raspotify_service():
+                # Wait for device to reappear
+                time.sleep(3.0)
             self._device_id = None
             self._last_device_check = 0
             return False
@@ -747,7 +958,11 @@ class SpotifyBackend(BaseBackend):
                 # Get playlist tracks count
                 try:
                     # Use playlist_tracks with limit=1 to get total count efficiently
-                    result = self._spotify.playlist_tracks(uri_id, limit=1)
+                    result = self._api_call_with_retry(
+                        self._spotify.playlist_tracks,
+                        uri_id,
+                        limit=1
+                    )
                     total = result.get('total', 0)
                     return total if total > 0 else None
                 except Exception as e:
@@ -756,7 +971,7 @@ class SpotifyBackend(BaseBackend):
             elif uri_type == 'album':
                 # Get album tracks count
                 try:
-                    album = self._spotify.album(uri_id)
+                    album = self._api_call_with_retry(self._spotify.album, uri_id)
                     tracks = album.get('tracks', {})
                     if isinstance(tracks, dict):
                         total = tracks.get('total', 0)
@@ -818,6 +1033,10 @@ class SpotifyBackend(BaseBackend):
                 if not self._ensure_device_active():
                     # Device activation failed, try to refresh device
                     logger.warning("Device activation failed, refreshing device...")
+                    # Try restarting raspotify if activation failed (could be connection issue)
+                    logger.info("Attempting to restart raspotify to resolve device activation issue...")
+                    if self._restart_raspotify_service():
+                        time.sleep(3.0)
                     self._device_id = None
                     self._last_device_check = 0
                     self._ensure_device(retry=True)
@@ -836,7 +1055,8 @@ class SpotifyBackend(BaseBackend):
             try:
                 if random_offset is not None:
                     # Start from random position
-                    self._spotify.start_playback(
+                    self._api_call_with_retry(
+                        self._spotify.start_playback,
                         device_id=self._device_id,
                         context_uri=uri,
                         offset={'position': random_offset}
@@ -844,12 +1064,21 @@ class SpotifyBackend(BaseBackend):
                     logger.info(f"Started playback from random position: {uri}")
                 else:
                     # Start from beginning (single track or couldn't get count)
-                    self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
+                    self._api_call_with_retry(
+                        self._spotify.start_playback,
+                        device_id=self._device_id,
+                        context_uri=uri
+                    )
                     logger.info(f"Started playback: {uri}")
                 
-                # Enable shuffle mode
+                # Enable shuffle mode (with small delay to avoid rate limits)
+                time.sleep(0.3)
                 try:
-                    self._spotify.shuffle(state=True, device_id=self._device_id)
+                    self._api_call_with_retry(
+                        self._spotify.shuffle,
+                        state=True,
+                        device_id=self._device_id
+                    )
                     logger.info("Shuffle mode enabled")
                 except Exception as shuffle_error:
                     logger.warning(f"Could not enable shuffle mode: {shuffle_error}")
@@ -884,19 +1113,29 @@ class SpotifyBackend(BaseBackend):
                         
                         # Retry playback
                         if random_offset is not None:
-                            self._spotify.start_playback(
+                            self._api_call_with_retry(
+                                self._spotify.start_playback,
                                 device_id=self._device_id,
                                 context_uri=uri,
                                 offset={'position': random_offset}
                             )
                             logger.info(f"Started playback from random position after token refresh: {uri}")
                         else:
-                            self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
+                            self._api_call_with_retry(
+                                self._spotify.start_playback,
+                                device_id=self._device_id,
+                                context_uri=uri
+                            )
                             logger.info(f"Started playback after token refresh: {uri}")
                         
-                        # Enable shuffle mode
+                        # Enable shuffle mode (with small delay to avoid rate limits)
+                        time.sleep(0.3)
                         try:
-                            self._spotify.shuffle(state=True, device_id=self._device_id)
+                            self._api_call_with_retry(
+                                self._spotify.shuffle,
+                                state=True,
+                                device_id=self._device_id
+                            )
                             logger.info("Shuffle mode enabled after token refresh")
                         except Exception as shuffle_error:
                             logger.warning(f"Could not enable shuffle mode: {shuffle_error}")
@@ -932,8 +1171,20 @@ class SpotifyBackend(BaseBackend):
                     error_msg = str(e).lower()
                     if 'device' in error_msg or 'not found' in error_msg:
                         logger.warning("Received 404 - device may not be active. Attempting to activate device...")
+                        # Try restarting raspotify first if device activation fails
+                        device_activated = self._ensure_device_active()
+                        if not device_activated:
+                            logger.info("Device activation failed - attempting to restart raspotify...")
+                            if self._restart_raspotify_service():
+                                time.sleep(3.0)
+                                # Reset device and try again
+                                self._device_id = None
+                                self._last_device_check = 0
+                                self._ensure_device(retry=True)
+                                device_activated = self._ensure_device_active()
+                        
                         # Try to activate device and retry
-                        if self._ensure_device_active():
+                        if device_activated:
                             # Recalculate track count and offset for retry
                             track_count = self._get_track_count(uri)
                             random_offset = None
@@ -944,19 +1195,29 @@ class SpotifyBackend(BaseBackend):
                             # Retry playback once
                             try:
                                 if random_offset is not None:
-                                    self._spotify.start_playback(
+                                    self._api_call_with_retry(
+                                        self._spotify.start_playback,
                                         device_id=self._device_id,
                                         context_uri=uri,
                                         offset={'position': random_offset}
                                     )
                                     logger.info(f"Started playback after device activation: {uri}")
                                 else:
-                                    self._spotify.start_playback(device_id=self._device_id, context_uri=uri)
+                                    self._api_call_with_retry(
+                                        self._spotify.start_playback,
+                                        device_id=self._device_id,
+                                        context_uri=uri
+                                    )
                                     logger.info(f"Started playback after device activation: {uri}")
                                 
-                                # Enable shuffle mode
+                                # Enable shuffle mode (with small delay to avoid rate limits)
+                                time.sleep(0.3)
                                 try:
-                                    self._spotify.shuffle(state=True, device_id=self._device_id)
+                                    self._api_call_with_retry(
+                                        self._spotify.shuffle,
+                                        state=True,
+                                        device_id=self._device_id
+                                    )
                                     logger.info("Shuffle mode enabled after device activation")
                                 except Exception as shuffle_error:
                                     logger.warning(f"Could not enable shuffle mode: {shuffle_error}")
@@ -972,13 +1233,37 @@ class SpotifyBackend(BaseBackend):
                                 play_not_found_beep()
                                 raise BackendError(f"Failed to start playback: {retry_error}")
                         else:
+                            # Last resort: try restarting raspotify one more time
+                            logger.warning("Device activation still failed after restart - this may require manual activation from Spotify app")
                             play_not_found_beep()
-                            raise BackendError(f"Device not found and could not be activated")
+                            raise BackendError(f"Device not found and could not be activated. Try restarting raspotify manually: sudo systemctl restart raspotify")
                     else:
                         play_not_found_beep()
                         raise BackendError(f"Playlist/album/track not found: {uri}")
                 elif e.http_status == 403:
                     raise BackendError("Permission denied. Make sure your Spotify account has Premium.")
+                elif e.http_status == 429:
+                    # Rate limit error - try restarting raspotify first, then retry
+                    logger.warning("Rate limit hit during playback. Attempting to restart raspotify...")
+                    play_retry_beep()
+                    # Try restarting raspotify to reset connection state
+                    if self._restart_raspotify_service():
+                        logger.info("Raspotify restarted, waiting before retry...")
+                        time.sleep(5.0)  # Wait longer after restart
+                        # Reset device to force re-discovery
+                        self._device_id = None
+                        self._last_device_check = 0
+                    else:
+                        # If restart failed, just wait with backoff
+                        time.sleep(self._rate_limit_backoff)
+                        # Exponential backoff
+                        self._rate_limit_backoff = min(
+                            self._rate_limit_backoff * 2,
+                            self._max_rate_limit_backoff
+                        )
+                    # Retry the entire play operation once
+                    logger.info("Retrying playback after rate limit handling...")
+                    return self.play(source_id, **kwargs)
                 else:
                     raise BackendError(f"Spotify API error: {e}")
                     
@@ -1006,7 +1291,10 @@ class SpotifyBackend(BaseBackend):
             # Try Web API first
             if self._spotify and self._device_id:
                 try:
-                    self._spotify.pause_playback(device_id=self._device_id)
+                    self._api_call_with_retry(
+                        self._spotify.pause_playback,
+                        device_id=self._device_id
+                    )
                     self._is_paused = True
                     # Keep _is_playing = True (we have a track, just paused)
                     # Don't set it to False, as that would indicate stopped, not paused
@@ -1017,16 +1305,24 @@ class SpotifyBackend(BaseBackend):
                         logger.debug("Received 401 Unauthorized during pause - attempting token refresh...")
                         try:
                             self._init_spotify()
-                            self._spotify.pause_playback(device_id=self._device_id)
+                            self._api_call_with_retry(
+                                self._spotify.pause_playback,
+                                device_id=self._device_id
+                            )
                             self._is_paused = True
                             logger.info("Paused Spotify playback (Web API) after token refresh")
                             return True
                         except Exception:
                             logger.debug("Web API pause failed after token refresh, trying MPRIS fallback")
+                    elif e.http_status == 429:
+                        logger.warning("Rate limit hit during pause, trying MPRIS fallback")
                     else:
                         logger.debug(f"Web API pause failed: {e}, trying MPRIS fallback")
                 except Exception as e:
-                    logger.debug(f"Web API pause failed: {e}, trying MPRIS fallback")
+                    if self._handle_rate_limit(e):
+                        logger.warning("Rate limit hit during pause, trying MPRIS fallback")
+                    else:
+                        logger.debug(f"Web API pause failed: {e}, trying MPRIS fallback")
             
             # Fallback to MPRIS
             if self._mpris_player:
@@ -1050,7 +1346,10 @@ class SpotifyBackend(BaseBackend):
             # Try Web API first
             if self._spotify and self._device_id:
                 try:
-                    self._spotify.start_playback(device_id=self._device_id)
+                    self._api_call_with_retry(
+                        self._spotify.start_playback,
+                        device_id=self._device_id
+                    )
                     self._is_paused = False
                     self.set_playing_state(True)
                     logger.info("Resumed Spotify playback (Web API)")
@@ -1060,17 +1359,25 @@ class SpotifyBackend(BaseBackend):
                         logger.debug("Received 401 Unauthorized during resume - attempting token refresh...")
                         try:
                             self._init_spotify()
-                            self._spotify.start_playback(device_id=self._device_id)
+                            self._api_call_with_retry(
+                                self._spotify.start_playback,
+                                device_id=self._device_id
+                            )
                             self._is_paused = False
                             self.set_playing_state(True)
                             logger.info("Resumed Spotify playback (Web API) after token refresh")
                             return True
                         except Exception:
                             logger.debug("Web API resume failed after token refresh, trying MPRIS fallback")
+                    elif e.http_status == 429:
+                        logger.warning("Rate limit hit during resume, trying MPRIS fallback")
                     else:
                         logger.debug(f"Web API resume failed: {e}, trying MPRIS fallback")
                 except Exception as e:
-                    logger.debug(f"Web API resume failed: {e}, trying MPRIS fallback")
+                    if self._handle_rate_limit(e):
+                        logger.warning("Rate limit hit during resume, trying MPRIS fallback")
+                    else:
+                        logger.debug(f"Web API resume failed: {e}, trying MPRIS fallback")
             
             # Fallback to MPRIS
             if self._mpris_player:
@@ -1098,17 +1405,25 @@ class SpotifyBackend(BaseBackend):
                 self._ensure_device()
                 # Pause playback to stop it
                 try:
-                    self._spotify.pause_playback(device_id=self._device_id)
+                    self._api_call_with_retry(
+                        self._spotify.pause_playback,
+                        device_id=self._device_id
+                    )
                     logger.info("Paused Spotify playback (stop)")
                 except spotipy.exceptions.SpotifyException as e:
                     if e.http_status == 401:
                         logger.debug("Received 401 Unauthorized during stop pause - attempting token refresh...")
                         try:
                             self._init_spotify()
-                            self._spotify.pause_playback(device_id=self._device_id)
+                            self._api_call_with_retry(
+                                self._spotify.pause_playback,
+                                device_id=self._device_id
+                            )
                             logger.info("Paused Spotify playback (stop) after token refresh")
                         except Exception:
                             logger.debug("Could not pause during stop after token refresh")
+                    elif e.http_status == 429:
+                        logger.warning("Rate limit hit during stop - continuing anyway")
                     else:
                         raise
                 
@@ -1117,15 +1432,18 @@ class SpotifyBackend(BaseBackend):
                 
                 # Check if it's still playing and force stop if needed
                 try:
-                    playback = self._spotify.current_playback()
+                    playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=1)
                     if playback and playback.get('is_playing', False):
                         # Still playing, try to pause again more aggressively
                         logger.warning("Spotify still playing after pause, forcing stop...")
-                        self._spotify.pause_playback(device_id=self._device_id)
+                        self._api_call_with_retry(
+                            self._spotify.pause_playback,
+                            device_id=self._device_id
+                        )
                         time.sleep(0.2)
                         
                         # Check one more time
-                        playback = self._spotify.current_playback()
+                        playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=1)
                         if playback and playback.get('is_playing', False):
                             logger.error("Spotify still playing after multiple stop attempts!")
                 except spotipy.exceptions.SpotifyException as e:
@@ -1136,6 +1454,8 @@ class SpotifyBackend(BaseBackend):
                             self._init_spotify()
                         except Exception:
                             pass  # Continue anyway
+                    elif e.http_status == 429:
+                        logger.debug("Rate limit hit while verifying stop - continuing anyway")
                     else:
                         logger.debug(f"Could not verify stop status: {e}")
                 except Exception as e:
@@ -1171,7 +1491,10 @@ class SpotifyBackend(BaseBackend):
             # Try Web API first
             if self._spotify and self._device_id:
                 try:
-                    self._spotify.next_track(device_id=self._device_id)
+                    self._api_call_with_retry(
+                        self._spotify.next_track,
+                        device_id=self._device_id
+                    )
                     logger.info("Skipped to next track (Web API)")
                     time.sleep(0.5)
                     self._update_current_item()
@@ -1181,17 +1504,25 @@ class SpotifyBackend(BaseBackend):
                         logger.debug("Received 401 Unauthorized during next - attempting token refresh...")
                         try:
                             self._init_spotify()
-                            self._spotify.next_track(device_id=self._device_id)
+                            self._api_call_with_retry(
+                                self._spotify.next_track,
+                                device_id=self._device_id
+                            )
                             logger.info("Skipped to next track (Web API) after token refresh")
                             time.sleep(0.5)
                             self._update_current_item()
                             return True
                         except Exception:
                             logger.debug("Web API next failed after token refresh, trying MPRIS fallback")
+                    elif e.http_status == 429:
+                        logger.warning("Rate limit hit during next, trying MPRIS fallback")
                     else:
                         logger.debug(f"Web API next failed: {e}, trying MPRIS fallback")
                 except Exception as e:
-                    logger.debug(f"Web API next failed: {e}, trying MPRIS fallback")
+                    if self._handle_rate_limit(e):
+                        logger.warning("Rate limit hit during next, trying MPRIS fallback")
+                    else:
+                        logger.debug(f"Web API next failed: {e}, trying MPRIS fallback")
             
             # Fallback to MPRIS
             if self._mpris_player:
@@ -1215,7 +1546,10 @@ class SpotifyBackend(BaseBackend):
             # Try Web API first
             if self._spotify and self._device_id:
                 try:
-                    self._spotify.previous_track(device_id=self._device_id)
+                    self._api_call_with_retry(
+                        self._spotify.previous_track,
+                        device_id=self._device_id
+                    )
                     logger.info("Went to previous track (Web API)")
                     time.sleep(0.5)
                     self._update_current_item()
@@ -1225,17 +1559,25 @@ class SpotifyBackend(BaseBackend):
                         logger.debug("Received 401 Unauthorized during previous - attempting token refresh...")
                         try:
                             self._init_spotify()
-                            self._spotify.previous_track(device_id=self._device_id)
+                            self._api_call_with_retry(
+                                self._spotify.previous_track,
+                                device_id=self._device_id
+                            )
                             logger.info("Went to previous track (Web API) after token refresh")
                             time.sleep(0.5)
                             self._update_current_item()
                             return True
                         except Exception:
                             logger.debug("Web API previous failed after token refresh, trying MPRIS fallback")
+                    elif e.http_status == 429:
+                        logger.warning("Rate limit hit during previous, trying MPRIS fallback")
                     else:
                         logger.debug(f"Web API previous failed: {e}, trying MPRIS fallback")
                 except Exception as e:
-                    logger.debug(f"Web API previous failed: {e}, trying MPRIS fallback")
+                    if self._handle_rate_limit(e):
+                        logger.warning("Rate limit hit during previous, trying MPRIS fallback")
+                    else:
+                        logger.debug(f"Web API previous failed: {e}, trying MPRIS fallback")
             
             # Fallback to MPRIS
             if self._mpris_player:
@@ -1260,16 +1602,19 @@ class SpotifyBackend(BaseBackend):
                 return
             
             try:
-                playback = self._spotify.current_playback()
+                playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=2)
             except spotipy.exceptions.SpotifyException as e:
                 if e.http_status == 401:
                     logger.debug("Received 401 Unauthorized while updating current item - attempting token refresh...")
                     try:
                         self._init_spotify()
-                        playback = self._spotify.current_playback()
+                        playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=2)
                     except Exception:
                         # If refresh fails, just skip updating current item
                         return
+                elif e.http_status == 429:
+                    # Rate limit - just skip updating this time
+                    return
                 else:
                     # For other errors, just skip updating
                     return
@@ -1286,6 +1631,96 @@ class SpotifyBackend(BaseBackend):
             logger.debug(f"Could not update current item: {e}")
             # Don't fail if we can't get track info
     
+    def get_playback_info(self) -> Optional[dict]:
+        """Get current playback position and duration from Spotify API."""
+        try:
+            if not self._spotify:
+                return None
+            
+            try:
+                playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=2)
+            except spotipy.exceptions.SpotifyException as e:
+                if e.http_status == 401:
+                    logger.debug("Received 401 Unauthorized while getting playback info - attempting token refresh...")
+                    try:
+                        self._init_spotify()
+                        playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=2)
+                    except Exception:
+                        return None
+                elif e.http_status == 429:
+                    # Rate limit - return None to skip this update
+                    return None
+                else:
+                    return None
+            except Exception:
+                return None
+            
+            if not playback:
+                return None
+            
+            # Update current item if available
+            item = playback.get('item')
+            if item:
+                title = item.get('name', 'Unknown')
+                artists = [artist['name'] for artist in item.get('artists', [])]
+                artist_str = ', '.join(artists) if artists else 'Unknown'
+                self.set_current_item(f"{artist_str} - {title}")
+            else:
+                # No item means nothing is loaded/playing
+                self.set_current_item(None)
+                return None
+            
+            progress_ms = playback.get('progress_ms')
+            duration_ms = item.get('duration_ms')
+            
+            # Validate data - progress_ms should never exceed duration_ms
+            if progress_ms is not None and duration_ms is not None:
+                if progress_ms > duration_ms:
+                    logger.warning(
+                        f"Invalid playback data: progress_ms ({progress_ms}) > duration_ms ({duration_ms}). "
+                        "This may indicate stale or incorrect API data."
+                    )
+                    # Cap progress_ms to duration_ms for safety
+                    progress_ms = min(progress_ms, duration_ms)
+            
+            # If we have an item but no progress/duration info, still return item info
+            # (though position/duration won't be available)
+            if progress_ms is None and duration_ms is None:
+                # Return empty dict to indicate we have item info but no position/duration
+                return {}
+            
+            info = {}
+            
+            if progress_ms is not None:
+                info['position_ms'] = progress_ms
+                info['position'] = self._format_time(progress_ms)
+            
+            if duration_ms is not None:
+                info['duration_ms'] = duration_ms
+                info['duration'] = self._format_time(duration_ms)
+            
+            # Calculate progress percentage if both are available
+            if progress_ms is not None and duration_ms is not None and duration_ms > 0:
+                info['progress'] = min(100, max(0, (progress_ms / duration_ms) * 100))
+            
+            return info if info else None
+            
+        except Exception as e:
+            logger.debug(f"Error getting playback info: {e}")
+            return None
+    
+    def _format_time(self, ms: int) -> str:
+        """Format milliseconds to MM:SS or HH:MM:SS."""
+        total_seconds = ms // 1000
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        
+        if hours > 0:
+            return f"{hours}:{minutes:02d}:{seconds:02d}"
+        else:
+            return f"{minutes}:{seconds:02d}"
+    
     def is_playing(self) -> bool:
         """Check if currently playing (and not paused)."""
         try:
@@ -1297,7 +1732,7 @@ class SpotifyBackend(BaseBackend):
             # Try Web API first
             if self._spotify:
                 try:
-                    playback = self._spotify.current_playback()
+                    playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=2)
                     if playback:
                         is_playing = playback.get('is_playing', False)
                         self.set_playing_state(is_playing)
@@ -1315,7 +1750,7 @@ class SpotifyBackend(BaseBackend):
                         try:
                             self._init_spotify()
                             # Retry once after refresh
-                            playback = self._spotify.current_playback()
+                            playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=2)
                             if playback:
                                 is_playing = playback.get('is_playing', False)
                                 self.set_playing_state(is_playing)
@@ -1327,6 +1762,9 @@ class SpotifyBackend(BaseBackend):
                                 return False
                         except Exception:
                             pass  # Fall through to MPRIS
+                    elif e.http_status == 429:
+                        # Rate limit - fall through to MPRIS or internal state
+                        pass
                     else:
                         pass  # Fall through to MPRIS
                 except Exception:
@@ -1359,6 +1797,8 @@ class SpotifyBackend(BaseBackend):
         
         self._monitoring_active = True
         self._was_playing = True
+        # Reset track change detection so we don't get a false change on first check
+        self._last_track_item_id = None
         
         def monitor():
             self._monitor_playback()
@@ -1381,9 +1821,12 @@ class SpotifyBackend(BaseBackend):
         """
         Background thread to monitor Spotify playback and detect when playlist ends.
         When playlist ends naturally (not paused), notify callback to cycle to next source.
+        Also updates current item and detects track changes.
         """
         consecutive_stopped_checks = 0
         required_stopped_checks = 3  # Require 3 consecutive checks to confirm playlist ended
+        track_update_interval = 3.0  # Update track info every 3 seconds
+        last_track_update = 0
         
         while self._monitoring_active:
             try:
@@ -1391,6 +1834,45 @@ class SpotifyBackend(BaseBackend):
                 if not self._current_playlist_id:
                     time.sleep(2.0)
                     continue
+                
+                current_time = time.time()
+                
+                # Periodically update current item to keep it fresh
+                if current_time - last_track_update >= track_update_interval:
+                    try:
+                        # Use get_playback_info() which updates current item and gets fresh data
+                        playback_info = self.get_playback_info()
+                        
+                        if playback_info is not None:
+                            # get_playback_info() already updated self._current_item
+                            # Now check if the track actually changed by comparing Spotify track IDs
+                            if self._spotify:
+                                try:
+                                    playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=1)
+                                    if playback and playback.get('item'):
+                                        current_track_id = playback['item'].get('id')
+                                        
+                                        # Detect track change
+                                        if current_track_id and current_track_id != self._last_track_item_id:
+                                            if self._last_track_item_id is not None:
+                                                # Track changed (not the first time we're seeing it)
+                                                new_item_name = self._current_item
+                                                if new_item_name:
+                                                    logger.debug(f"Track changed to: {new_item_name}")
+                                                    self._notify_track_changed(new_item_name)
+                                            
+                                            self._last_track_item_id = current_track_id
+                                        elif not current_track_id:
+                                            # No track ID available, reset
+                                            self._last_track_item_id = None
+                                except Exception as e:
+                                    # If we can't get track ID, that's okay - just continue
+                                    logger.debug(f"Could not get track ID for change detection: {e}")
+                        
+                        last_track_update = current_time
+                    except Exception as e:
+                        logger.debug(f"Error updating current item in monitoring thread: {e}")
+                        # Continue monitoring despite errors
                 
                 # Check current playback state
                 currently_playing = self.is_playing()

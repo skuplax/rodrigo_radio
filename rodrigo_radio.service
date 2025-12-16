@@ -1,25 +1,31 @@
 [Unit]
 Description=Raspberry Pi Music Player Daemon
-After=network.target sound.target
+After=network.target sound.target run-rodrigo_radio.mount
 Wants=network-online.target
+Requires=run-rodrigo_radio.mount
 
 [Service]
 Type=simple
 User=skayflakes
 Group=skayflakes
 WorkingDirectory=/home/skayflakes/rodrigo_radio
+# Logs go to tmpfs (memory) to avoid SD card wear - also sent to Supabase
+# The run-rodrigo_radio.mount unit creates /run/rodrigo_radio as tmpfs
+# Create log file (run as root with + prefix)
+ExecStartPre=+/bin/touch /run/rodrigo_radio/console.log
+ExecStartPre=+/bin/chmod 666 /run/rodrigo_radio/console.log
 ExecStart=/usr/bin/python3 /home/skayflakes/rodrigo_radio/main.py
 Restart=always
 RestartSec=10
-StandardOutput=journal
-StandardError=journal
+StandardOutput=append:/run/rodrigo_radio/console.log
+StandardError=append:/run/rodrigo_radio/console.log
 SyslogIdentifier=rodrigo_radio
 
 # Environment variables
 Environment="PYTHONUNBUFFERED=1"
 
 # Security settings
-#NoNewPrivileges=true
+NoNewPrivileges=true
 PrivateTmp=true
 
 [Install]

@@ -1,0 +1,13 @@
+// Polkit rule to allow skayflakes user to manage raspotify service
+// This allows systemctl start/stop/restart raspotify without sudo
+// Place this file in /etc/polkit-1/rules.d/50-rodrigo-radio.rules
+
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units" &&
+        subject.user == "skayflakes") {
+        // Allow managing raspotify service specifically
+        if (action.lookup("unit") == "raspotify.service") {
+            return polkit.Result.YES;
+        }
+    }
+});

@@ -59,6 +59,12 @@ class PlayerController:
         self._spotify_backend: Optional[SpotifyBackend] = None
         self._youtube_backend: Optional[YouTubeBackend] = None
         
+        # State file monitoring
+        self._state_monitor_thread: Optional[threading.Thread] = None
+        self._state_monitor_active = False
+        self._last_state_index = None  # Track last known source index
+        self._state_check_interval = 2.0  # Check state file every 2 seconds
+        
         # Set up rotary encoder if pins provided
         self.rotary_encoder: Optional[RotaryEncoder] = None
         if encoder_pins:
@@ -84,6 +90,9 @@ class PlayerController:
         
         # Play startup beep
         play_startup_beep()
+        
+        # Start monitoring state file for changes
+        self._start_state_monitor()
         
         # Auto-start playback if we have a current source
         self._auto_start()
@@ -204,6 +213,8 @@ class PlayerController:
                             
                             # Set up callback for when playback ends naturally (e.g., playlist finished)
                             backend.set_on_playback_ended_callback(self._on_playback_ended)
+                            # Set up callback for when track changes
+                            backend.set_on_track_changed_callback(self._on_track_changed)
                             
                             # Then stop old backend (after setting new one to avoid race condition)
                             if old_backend and old_backend != backend:
@@ -664,12 +675,17 @@ class PlayerController:
                 'playing': False,
                 'source': None,
                 'current_item': None,
-                'source_type': None
+                'source_type': None,
+                'playback_info': None
             }
             
             if self.current_backend:
                 status['playing'] = self.current_backend.is_playing()
                 status['current_item'] = self.current_backend.get_current_item()
+                # Get playback position/duration info
+                playback_info = self.current_backend.get_playback_info()
+                if playback_info:
+                    status['playback_info'] = playback_info
             
             if self.current_source:
                 status['source'] = self.current_source.get('label')
@@ -678,6 +694,82 @@ class PlayerController:
             
             return status
     
+    def _start_state_monitor(self):
+        """Start background thread to monitor state file for source changes."""
+        if self._state_monitor_active:
+            return
+        
+        # Get initial state index
+        current_source = self.source_manager.get_current_source()
+        if current_source:
+            self._last_state_index = self.source_manager._current_index
+        else:
+            self._last_state_index = 0
+        
+        self._state_monitor_active = True
+        
+        def monitor_state():
+            """Background thread to monitor state file changes."""
+            while self._state_monitor_active:
+                try:
+                    # Reload state from file
+                    self.source_manager._load_state()
+                    current_index = self.source_manager._current_index
+                    
+                    # Check if source index changed
+                    if self._last_state_index is not None and current_index != self._last_state_index:
+                        logger.info(f"Detected state file change: source index {self._last_state_index} -> {current_index}")
+                        
+                        # Get the new source
+                        new_source = self.source_manager.get_current_source()
+                        if new_source:
+                            # Check if it's different from current source
+                            with self._lock:
+                                current_source_id = self.current_source.get('id') if self.current_source else None
+                                new_source_id = new_source.get('id')
+                                
+                                if current_source_id != new_source_id:
+                                    logger.info(f"Switching to source from state file: {new_source.get('label')}")
+                                    # Update current_source reference
+                                    with self._lock:
+                                        self.current_source = new_source
+                                    # Stop current playback and switch
+                                    if self.current_backend:
+                                        try:
+                                            self.current_backend.stop()
+                                        except Exception as e:
+                                            logger.debug(f"Error stopping backend: {e}")
+                                    
+                                    # Switch to new source
+                                    self._switch_source(new_source)
+                                else:
+                                    logger.debug("State file changed but source ID is the same, no action needed")
+                        
+                        self._last_state_index = current_index
+                    elif self._last_state_index is None:
+                        # First check, just record the index
+                        self._last_state_index = current_index
+                    
+                    # Sleep before next check
+                    time.sleep(self._state_check_interval)
+                    
+                except Exception as e:
+                    logger.error(f"Error in state monitor thread: {e}")
+                    time.sleep(self._state_check_interval)
+        
+        self._state_monitor_thread = threading.Thread(target=monitor_state, daemon=True)
+        self._state_monitor_thread.start()
+        logger.info("Started state file monitor thread")
+    
+    def _stop_state_monitor(self):
+        """Stop the state file monitor thread."""
+        if not self._state_monitor_active:
+            return
+        
+        self._state_monitor_active = False
+        if self._state_monitor_thread and self._state_monitor_thread.is_alive():
+            logger.info("Stopping state file monitor thread")
+    
     def run(self):
         """Run the controller (blocks forever waiting for button presses)."""
         logger.info("Player controller running, waiting for button input...")
@@ -685,18 +777,38 @@ class PlayerController:
     
     def _on_volume_change(self, volume: int):
         """Handle volume change from rotary encoder."""
-        logger.info(f"Volume changed to {volume}%")
-        self.history.log_audio_event('volume_set', value=float(volume))
+        # Use throttled logging - only log significant changes
+        from utils.logger import should_log_volume_change
+        if should_log_volume_change(volume, is_mute_toggle=False):
+            # Log to history with proper action name (not through logger.info to avoid meta-logging)
+            self.history.log_audio_event('volume_set', value=float(volume))
         # Could add TTS announcement here if desired
         # announce_volume(volume)
     
     def _on_mute_toggle(self):
         """Handle mute toggle from rotary encoder switch."""
-        logger.info("Mute toggled")
-        # Determine mute state (would need to query volume controller)
+        # Get current volume for logging
+        current_volume = 0
+        if self.rotary_encoder and self.rotary_encoder.volume_controller:
+            current_volume = self.rotary_encoder.volume_controller.get_volume()
+        
+        # Log mute toggle directly to history (always logs, no throttling needed)
         self.history.log_user_input('encoder_switch_press', action='mute_toggle')
         # Could add TTS announcement here if desired
         # announce_mute_state()
+    
+    def _on_track_changed(self, new_item_name: str):
+        """
+        Handle track change notification from backend.
+        
+        Args:
+            new_item_name: Name of the new track/item
+        """
+        with self._lock:
+            if self.current_source and new_item_name:
+                # Log the track change as a new playback start
+                self.history.log_playback_start(self.current_source, new_item_name)
+                logger.debug(f"Track changed to: {new_item_name}")
     
     def _on_playback_ended(self):
         """Handle callback when playback ends naturally (e.g., playlist finished)."""
@@ -713,6 +825,9 @@ class PlayerController:
     def shutdown(self):
         """Gracefully shutdown the controller."""
         logger.info("Shutting down player controller...")
+        
+        # Stop state monitor
+        self._stop_state_monitor()
         
         # Log shutdown event
         self.history.log_config_event('shutdown')

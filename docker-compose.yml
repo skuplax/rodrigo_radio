@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  rodrigo-radio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rodrigo-radio
+    restart: unless-stopped
+    
+    # For hardware access on Raspberry Pi
+    # Uncomment these for production use with actual hardware:
+    # privileged: true
+    # devices:
+    #   - /dev/gpiomem:/dev/gpiomem
+    #   - /dev/snd:/dev/snd
+    
+    # For development without hardware, use these instead:
+    network_mode: host
+    
+    # Environment variables (can be overridden with .env file)
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=America/New_York  # Adjust to your timezone
+    
+    # Volume mounts
+    volumes:
+      # Mount config directory (create from examples if needed)
+      - ./config:/app/config:ro
+      # Mount data directory for state persistence
+      - ./data:/app/data
+      # Mount logs directory
+      - ./logs:/app/logs
+      # Mount announcements directory (optional)
+      - ./announcements:/app/announcements:ro
+      # For development: mount source code for live editing
+      - .:/app
+    
+    # Optional: Mount .env file if it exists
+    env_file:
+      - .env
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+

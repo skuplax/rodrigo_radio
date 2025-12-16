@@ -1,0 +1,57 @@
+version: '3.8'
+
+# Production docker-compose configuration for Raspberry Pi
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  rodrigo-radio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rodrigo-radio
+    restart: always
+    
+    # Hardware access required for GPIO and audio
+    privileged: true
+    devices:
+      - /dev/gpiomem:/dev/gpiomem
+      - /dev/snd:/dev/snd
+    
+    # Use host network for better hardware integration
+    network_mode: host
+    
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=${TZ:-America/New_York}
+    
+    # Volume mounts (read-only config, writable data/logs)
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./announcements:/app/announcements:ro
+    
+    # Environment file
+    env_file:
+      - .env
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Resource limits (adjust as needed)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+

@@ -7,7 +7,12 @@ import threading
 import time
 from pathlib import Path
 from typing import Optional, List, Dict
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    # Fallback for Python < 3.9
+    from backports.zoneinfo import ZoneInfo
 
 try:
     from dotenv import load_dotenv
@@ -25,6 +30,7 @@ except ImportError:
     create_client = None
     Client = None
 
+# Use standard logger (not our custom one to avoid circular imports)
 logger = logging.getLogger(__name__)
 
 # Default paths
@@ -58,7 +64,7 @@ class SupabaseLogHandler(logging.Handler):
         self._is_online = False
         
         if not SUPABASE_AVAILABLE:
-            logging.warning("Supabase packages not available. Logs will be buffered in memory only.")
+            # Don't log this - it's meta-logging
             return
         
         # Load environment variables
@@ -70,9 +76,9 @@ class SupabaseLogHandler(logging.Handler):
                 self._client = create_client(self.supabase_url, self.supabase_key)
                 self._is_online = self._check_network()
             except Exception as e:
-                logging.error(f"Error initializing Supabase client for logging: {e}")
-        else:
-            logging.warning("Supabase credentials not found - logs will be buffered in memory only")
+                # Only log actual errors, not warnings about initialization
+                pass
+        # Don't log warnings about missing credentials - it's meta-logging
         
         # Start background threads
         self._start_sync_thread()
@@ -124,9 +130,41 @@ class SupabaseLogHandler(logging.Handler):
         except (socket.gaierror, OSError):
             return False
     
+    def _should_filter_log(self, record: logging.LogRecord) -> bool:
+        """
+        Filter out redundant or unnecessary logs.
+        
+        Returns:
+            True if should filter out, False if should log
+        """
+        msg = self.format(record).lower()
+        logger_name = record.name.lower()
+        action = getattr(record, 'action', '').lower()
+        
+        # Filter meta-logging (logs about logging)
+        if any(keyword in msg or keyword in logger_name or keyword in action 
+               for keyword in ['supabase', 'log', 'synced', 'syncing', 'buffer']):
+            # But allow ERROR logs about logging failures
+            if record.levelno >= logging.ERROR:
+                return False
+            # Filter out INFO/DEBUG logs about logging operations
+            if 'error' not in msg and 'failure' not in msg:
+                return True
+        
+        # Filter httpx internal logs
+        if 'httpx' in logger_name or 'httpx' in msg:
+            if '_send_single_request' in action or '_send_single_request' in msg:
+                return True
+        
+        return False
+    
     def emit(self, record: logging.LogRecord):
         """Emit a log record to Supabase."""
         try:
+            # Filter out redundant logs
+            if self._should_filter_log(record):
+                return
+            
             # Format the log message
             msg = self.format(record)
             
@@ -153,29 +191,45 @@ class SupabaseLogHandler(logging.Handler):
             
             # Extract action from message or use logger name
             action = 'log_message'
+            # Check for action in extra dict first (set by log_volume_change)
             if hasattr(record, 'action'):
                 action = record.action
+            elif hasattr(record, '__dict__') and 'action' in record.__dict__:
+                action = record.__dict__['action']
             elif record.funcName and record.funcName != '<module>':
-                action = f"{record.name}.{record.funcName}"
+                # Don't use function names that contain 'log' to avoid meta-logging
+                if 'log' not in record.funcName.lower():
+                    action = f"{record.name}.{record.funcName}"
+                else:
+                    # Extract meaningful action from message or use module name
+                    action = record.name.split('.')[-1]
             else:
                 action = record.name.split('.')[-1]
             
-            # Create log entry
+            # Convert timestamp from float to datetime objects
+            utc_timestamp = datetime.fromtimestamp(record.created, tz=timezone.utc)
+            # Use Asia/Manila timezone (+08) for local timestamp
+            manila_tz = ZoneInfo('Asia/Manila')
+            local_timestamp = utc_timestamp.astimezone(manila_tz)
+            
+            # Extract clean message (without timestamp/log_level prefix)
+            clean_message = record.getMessage()
+            
+            # Create log entry with individual columns instead of metadata JSON
             entry = {
-                'timestamp': record.created,  # Unix timestamp
+                'timestamp': utc_timestamp.isoformat(),  # UTC datetime as ISO string
+                'timestamp_local': local_timestamp.isoformat(),  # Local datetime as ISO string (Asia/Manila)
                 'log_level': log_level,
                 'event_type': event_type,
                 'action': action,
                 'status': 'success' if record.levelno < logging.ERROR else 'error',
-                'metadata': json.dumps({
-                    'logger': record.name,
-                    'module': record.module,
-                    'function': record.funcName,
-                    'line': record.lineno,
-                    'message': msg,
-                    'pathname': record.pathname,
-                    'exc_info': self.format(record) if record.exc_info else None
-                })
+                'logger': record.name,
+                'module': record.module,
+                'function_name': record.funcName,
+                'line_number': record.lineno,
+                'message': clean_message,  # Just the message content, no timestamp/log_level prefix
+                'pathname': record.pathname,
+                'exc_info': self.format(record) if record.exc_info else None
             }
             
             # Add to buffer
@@ -221,8 +275,7 @@ class SupabaseLogHandler(logging.Handler):
             # Re-add entries to buffer on error
             with self._buffer_lock:
                 self._buffer.extend(entries)
-            # Log error but don't break
-            logging.error(f"Error syncing logs to Supabase: {e}", exc_info=False)
+            # Don't log sync errors - it's meta-logging and could cause loops
     
     def _start_sync_thread(self):
         """Start background thread for periodic syncing."""

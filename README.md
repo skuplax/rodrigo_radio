@@ -44,7 +44,31 @@ sudo apt install -y \
 pip3 install --user --break-system-packages gpiozero spotipy
 ```
 
+**Or use Docker** (see [Docker Setup](#docker-setup) section below)
+
 ## Installation
+
+### Docker Setup (Recommended for Development/Testing)
+
+For development, testing, or running in a containerized environment, see [DOCKER.md](DOCKER.md) for detailed instructions.
+
+Quick start:
+```bash
+# Build and run
+docker-compose build
+docker-compose up
+
+# Or for production on Raspberry Pi
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+The Docker setup supports:
+- Development on x86_64 systems (hardware features gracefully disabled)
+- Production on Raspberry Pi with full hardware access
+- Easy environment replication
+- Isolated dependencies
+
+### Native Installation
 
 ### Automated Installation (Recommended)
 

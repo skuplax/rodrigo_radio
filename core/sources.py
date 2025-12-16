@@ -156,8 +156,10 @@ class SourceManager:
             
             index = state.get('current_source_index', 0)
             if 0 <= index < len(self._sources):
+                # Only log if the index actually changed (to avoid spam from state monitor)
+                if self._current_index != index:
+                    logger.info(f"Restored state: source index {index}")
                 self._current_index = index
-                logger.info(f"Restored state: source index {index}")
             else:
                 logger.warning(f"Invalid source index {index}, resetting to 0")
                 self._current_index = 0
@@ -218,6 +220,75 @@ class SourceManager:
         current = self.get_current_source()
         logger.info(f"Cycled to source: {current.get('label', current.get('id', 'unknown'))}")
         return current
+    
+    def set_source(self, source_identifier) -> Optional[Dict]:
+        """
+        Set the current source by index, ID, or label.
+        
+        Args:
+            source_identifier: Can be:
+                - An integer index (0-based)
+                - A source ID string
+                - A source label string (partial match supported)
+        
+        Returns:
+            The source dict if found and set, None otherwise
+        """
+        # Check for file changes before setting (hot-reload)
+        self.reload_sources(preserve_current=True)
+        
+        if not self._sources:
+            logger.warning("No sources configured")
+            return None
+        
+        # Try as integer index first
+        if isinstance(source_identifier, int):
+            if 0 <= source_identifier < len(self._sources):
+                self._current_index = source_identifier
+                self.save_state()
+                current = self.get_current_source()
+                logger.info(f"Set source to index {source_identifier}: {current.get('label', current.get('id', 'unknown'))}")
+                return current
+            else:
+                logger.warning(f"Invalid source index: {source_identifier} (valid range: 0-{len(self._sources)-1})")
+                return None
+        
+        # Try as string (ID or label)
+        if isinstance(source_identifier, str):
+            # First try exact ID match
+            for i, source in enumerate(self._sources):
+                if source.get('id') == source_identifier:
+                    self._current_index = i
+                    self.save_state()
+                    current = self.get_current_source()
+                    logger.info(f"Set source to ID '{source_identifier}': {current.get('label', current.get('id', 'unknown'))}")
+                    return current
+            
+            # Then try exact label match
+            for i, source in enumerate(self._sources):
+                if source.get('label') == source_identifier:
+                    self._current_index = i
+                    self.save_state()
+                    current = self.get_current_source()
+                    logger.info(f"Set source to label '{source_identifier}': {current.get('label', current.get('id', 'unknown'))}")
+                    return current
+            
+            # Finally try partial label match (case-insensitive)
+            source_identifier_lower = source_identifier.lower()
+            for i, source in enumerate(self._sources):
+                label = source.get('label', '').lower()
+                if source_identifier_lower in label or label in source_identifier_lower:
+                    self._current_index = i
+                    self.save_state()
+                    current = self.get_current_source()
+                    logger.info(f"Set source to label matching '{source_identifier}': {current.get('label', current.get('id', 'unknown'))}")
+                    return current
+            
+            logger.warning(f"Source not found: '{source_identifier}'")
+            return None
+        
+        logger.warning(f"Invalid source identifier type: {type(source_identifier)}")
+        return None
     
     def get_source_count(self) -> int:
         """Get the number of configured sources."""

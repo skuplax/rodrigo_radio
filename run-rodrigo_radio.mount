@@ -1,0 +1,10 @@
+[Unit]
+Description=tmpfs for rodrigo_radio logs
+Before=rodrigo_radio.service
+DefaultDependencies=no
+
+[Mount]
+What=tmpfs
+Where=/run/rodrigo_radio
+Type=tmpfs
+Options=size=50M,mode=0755

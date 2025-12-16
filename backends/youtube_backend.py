@@ -91,8 +91,26 @@ class YouTubeBackend(BaseBackend):
                 # Try to find videoId with namespace
                 video_id_elem = (entry.find('{http://www.youtube.com/xml/schemas/2015}videoId') or 
                                 entry.find('yt:videoId', namespaces))
-                title_elem = (entry.find('{http://www.w3.org/2005/Atom}title') or 
-                             entry.find('title'))
+                
+                # Try multiple methods to find title element
+                title_elem = None
+                for title_path in [
+                    '{http://www.w3.org/2005/Atom}title',
+                    'atom:title',
+                    'title',
+                    './/{http://www.w3.org/2005/Atom}title',
+                    './/title'
+                ]:
+                    try:
+                        if title_path.startswith('atom:') or title_path.startswith('{'):
+                            title_elem = entry.find(title_path, namespaces) if ':' in title_path else entry.find(title_path)
+                        else:
+                            title_elem = entry.find(title_path)
+                        if title_elem is not None and title_elem.text:
+                            break
+                    except Exception:
+                        continue
+                
                 published_elem = (entry.find('{http://www.w3.org/2005/Atom}published') or 
                                  entry.find('published'))
                 link_elem = (entry.find('{http://www.w3.org/2005/Atom}link') or 
@@ -100,7 +118,16 @@ class YouTubeBackend(BaseBackend):
                 
                 if video_id_elem is not None and video_id_elem.text:
                     video_id = video_id_elem.text
-                    title = title_elem.text if title_elem is not None and title_elem.text else "Unknown"
+                    # Extract title text, using video_id as fallback if title not found
+                    if title_elem is not None and title_elem.text:
+                        title = title_elem.text.strip()
+                        if not title:  # Empty string after strip
+                            title = f"YouTube Video {video_id[:11]}"
+                            logger.debug(f"Title was empty for video {video_id}, using fallback")
+                    else:
+                        # If title not found, use video_id instead of "Unknown"
+                        title = f"YouTube Video {video_id[:11]}"
+                        logger.debug(f"Could not find title element for video {video_id}, using fallback")
                     published = published_elem.text if published_elem is not None and published_elem.text else ""
                     
                     # Construct YouTube URL
@@ -259,38 +286,56 @@ class YouTubeBackend(BaseBackend):
                 check_interval = 0.5  # Check every 0.5 seconds
                 start_time = time.time()
                 
-                while time.time() - start_time < max_wait:
-                    if not self._mpv_process:
-                        break
+                try:
+                    while time.time() - start_time < max_wait:
+                        if not self._mpv_process:
+                            break
+                        
+                        # Check if process is still running
+                        if self._mpv_process.poll() is not None:
+                            # Process died, stop beep immediately
+                            if self._pulsing_beep:
+                                self._pulsing_beep._force_stop()
+                                self._pulsing_beep = None
+                            break
+                        
+                        # Check if mpv has been running for a bit (indicates successful start)
+                        # After 2 seconds of mpv running, we assume playback has started
+                        elapsed = time.time() - start_time
+                        if elapsed >= 2.0:
+                            # mpv has been running for 2+ seconds, likely playing
+                            # Request stop (will continue for tail_duration)
+                            if self._pulsing_beep:
+                                self._pulsing_beep.stop()  # This starts the 3s tail
+                            break
+                        
+                        time.sleep(check_interval)
                     
-                    # Check if process is still running
-                    if self._mpv_process.poll() is not None:
-                        # Process died, stop beep immediately
-                        if self._pulsing_beep:
-                            self._pulsing_beep._force_stop()
-                            self._pulsing_beep = None
-                        break
-                    
-                    # Check if mpv has been running for a bit (indicates successful start)
-                    # After 2 seconds of mpv running, we assume playback has started
-                    elapsed = time.time() - start_time
-                    if elapsed >= 2.0:
-                        # mpv has been running for 2+ seconds, likely playing
-                        # Request stop (will continue for tail_duration)
-                        if self._pulsing_beep:
-                            self._pulsing_beep.stop()  # This starts the 3s tail
-                        break
-                    
-                    time.sleep(check_interval)
-                
-                # If we've waited the max time, stop beep anyway
-                if self._pulsing_beep:
-                    self._pulsing_beep.stop()  # Start tail
+                    # If we've waited the max time, stop beep anyway
+                    if self._pulsing_beep:
+                        self._pulsing_beep.stop()  # Start tail
+                except Exception as e:
+                    # If anything goes wrong, force stop the beep
+                    logger.error(f"Error in playback detection thread: {e}")
+                    if self._pulsing_beep:
+                        self._pulsing_beep._force_stop()
+                        self._pulsing_beep = None
         
             # Start detection in background
             threading.Thread(target=detect_playback_start, daemon=True).start()
             
-            logger.info(f"Started YouTube playback: {title or url}")
+            # Log with better fallback - avoid showing "Unknown"
+            display_title = title
+            if not display_title or display_title == "Unknown" or display_title.startswith("YouTube Video"):
+                # Try to extract video ID from URL as fallback
+                import re
+                video_id_match = re.search(r'[?&]v=([a-zA-Z0-9_-]{11})', url)
+                if video_id_match:
+                    display_title = f"YouTube Video {video_id_match.group(1)}"
+                else:
+                    display_title = url[:50] + "..." if len(url) > 50 else url
+            
+            logger.info(f"Started YouTube playback: {display_title}")
             
         except Exception as e:
             # Force stop pulsing beep on error
@@ -410,6 +455,11 @@ class YouTubeBackend(BaseBackend):
                 
                 logger.info(f"Auto-advancing to next video: {video_title}")
                 
+                # Stop any existing pulsing beep before starting a new one
+                if self._pulsing_beep:
+                    self._pulsing_beep._force_stop()
+                    self._pulsing_beep = None
+                
                 # Start pulsing beep to indicate loading next video (50% volume, 3s tail)
                 self._pulsing_beep = PulsingBeep(frequency=300.0, pulse_duration=0.3, pause_duration=0.3, volume=0.5, tail_duration=3.0)
                 self._pulsing_beep.start()
@@ -480,6 +530,11 @@ class YouTubeBackend(BaseBackend):
                 video_title = prev_video.get('title', 'YouTube Audio')
                 
                 logger.info(f"Going to previous video: {video_title}")
+                
+                # Stop any existing pulsing beep before starting a new one
+                if self._pulsing_beep:
+                    self._pulsing_beep._force_stop()
+                    self._pulsing_beep = None
                 
                 # Start pulsing beep to indicate loading previous video (50% volume, 3s tail)
                 self._pulsing_beep = PulsingBeep(frequency=300.0, pulse_duration=0.3, pause_duration=0.3, volume=0.5, tail_duration=3.0)
@@ -558,6 +613,11 @@ class YouTubeBackend(BaseBackend):
             if source_type == 'youtube_channel':
                 channel_id = kwargs.get('channel_id') or source_id
                 self._current_channel_id = channel_id
+                
+                # Stop any existing pulsing beep before starting a new one
+                if self._pulsing_beep:
+                    self._pulsing_beep._force_stop()
+                    self._pulsing_beep = None
                 
                 # Start pulsing beep to indicate loading (50% volume, 3s tail)
                 self._pulsing_beep = PulsingBeep(frequency=300.0, pulse_duration=0.3, pause_duration=0.3, volume=0.5, tail_duration=3.0)
@@ -756,6 +816,13 @@ class YouTubeBackend(BaseBackend):
             logger.warning("Previous track in playlist not supported")
             return False
         return False
+    
+    def get_playback_info(self) -> Optional[dict]:
+        """Get current playback position and duration from mpv (if available via IPC)."""
+        # Note: mpv position/duration would require IPC socket connection
+        # For now, return None as YouTube streams often don't have fixed durations
+        # This could be enhanced in the future with mpv JSON IPC
+        return None
     
     def is_playing(self) -> bool:
         """Check if currently playing (and not paused)."""

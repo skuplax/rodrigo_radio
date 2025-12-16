@@ -263,6 +263,21 @@ def play_no_sources_beep():
     logger.debug("Played no sources beep")
 
 
+def play_max_volume_beep():
+    """Play max volume beep (three quick high-pitched beeps: 800Hz, 0.1s each)."""
+    wav_data = _generate_beep_wav(800, 0.1)
+    
+    def play_beeps():
+        import time
+        for i in range(3):
+            _play_wav_data(wav_data)
+            if i < 2:  # Don't sleep after last beep
+                time.sleep(0.1)  # Quick gap between beeps for urgent feel
+    
+    threading.Thread(target=play_beeps, daemon=True).start()
+    logger.debug("Played max volume beep")
+
+
 class PulsingBeep:
     """
     Plays a pulsing beep sound continuously until stopped.
