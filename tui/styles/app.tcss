@@ -1,0 +1,275 @@
+/* Rodrigo Radio TUI Monitor Styles */
+
+/* ===== Global Styles ===== */
+Screen {
+    background: $surface;
+}
+
+/* ===== Header Styles ===== */
+Header {
+    dock: top;
+    background: $primary;
+    color: $text;
+}
+
+/* ===== Footer Styles ===== */
+Footer {
+    dock: bottom;
+    background: $primary-darken-2;
+}
+
+/* ===== Widget Container Styles ===== */
+.widget-container {
+    border: solid $primary;
+    padding: 1;
+    margin: 1;
+    background: $surface-darken-1;
+}
+
+.widget-title {
+    text-style: bold;
+    color: $secondary;
+    margin-bottom: 1;
+}
+
+/* ===== Now Playing Widget ===== */
+#now-playing {
+    height: auto;
+    min-height: 10;
+    border: solid $success;
+}
+
+#now-playing .source-name {
+    text-style: bold;
+    color: $success;
+}
+
+#now-playing .track-name {
+    color: $text;
+    text-style: italic;
+}
+
+#now-playing .artist-name {
+    color: $text-muted;
+}
+
+#now-playing .status-playing {
+    color: $success;
+}
+
+#now-playing .status-paused {
+    color: $warning;
+}
+
+#now-playing .status-stopped {
+    color: $error;
+}
+
+/* ===== Activity Feed Widget ===== */
+#activity-feed {
+    height: 100%;
+    border: solid $primary;
+}
+
+#activity-feed .event-playback {
+    color: $success;
+}
+
+#activity-feed .event-user-input {
+    color: $warning;
+}
+
+#activity-feed .event-audio {
+    color: $primary-lighten-2;
+}
+
+#activity-feed .event-error {
+    color: $error;
+}
+
+#activity-feed .event-system {
+    color: $text-muted;
+}
+
+#activity-feed .timestamp {
+    color: $text-muted;
+    width: 10;
+}
+
+/* ===== Source List Widget ===== */
+#source-list {
+    height: auto;
+    min-height: 8;
+    border: solid $secondary;
+}
+
+#source-list .source-current {
+    background: $primary;
+    text-style: bold;
+}
+
+#source-list .source-spotify {
+    color: $success;
+}
+
+#source-list .source-youtube {
+    color: $error;
+}
+
+/* ===== Volume Bar Widget ===== */
+#volume-bar {
+    height: 5;
+    border: solid $warning;
+}
+
+#volume-bar .volume-high {
+    color: $error;
+}
+
+#volume-bar .volume-medium {
+    color: $warning;
+}
+
+#volume-bar .volume-low {
+    color: $success;
+}
+
+#volume-bar .time-mode {
+    color: $text-muted;
+    text-style: italic;
+}
+
+/* ===== Stats Panel Widget ===== */
+#stats-panel {
+    height: auto;
+    min-height: 6;
+    border: solid $primary-lighten-1;
+}
+
+#stats-panel .stat-value {
+    text-style: bold;
+    color: $secondary;
+}
+
+#stats-panel .stat-label {
+    color: $text-muted;
+}
+
+/* ===== Health Panel Widget ===== */
+#health-panel {
+    height: auto;
+    min-height: 4;
+    border: solid $primary;
+}
+
+#health-panel .health-good {
+    color: $success;
+}
+
+#health-panel .health-warning {
+    color: $warning;
+}
+
+#health-panel .health-error {
+    color: $error;
+}
+
+/* ===== Connection Status ===== */
+.connection-status {
+    dock: right;
+    width: auto;
+    padding: 0 1;
+}
+
+.connected {
+    color: $success;
+}
+
+.disconnected {
+    color: $error;
+}
+
+.reconnecting {
+    color: $warning;
+}
+
+/* ===== Dashboard Layout ===== */
+#dashboard-container {
+    layout: grid;
+    grid-size: 2 2;
+    grid-gutter: 1;
+    padding: 1;
+}
+
+#left-panel {
+    column-span: 1;
+    row-span: 2;
+    layout: vertical;
+}
+
+#right-panel {
+    column-span: 1;
+    row-span: 2;
+}
+
+/* ===== History Screen ===== */
+#history-container {
+    padding: 1;
+}
+
+#history-table {
+    height: 100%;
+}
+
+#history-filters {
+    height: 3;
+    dock: top;
+}
+
+/* ===== Stats Screen ===== */
+#stats-container {
+    padding: 1;
+    layout: grid;
+    grid-size: 2 2;
+    grid-gutter: 1;
+}
+
+/* ===== DataTable Styles ===== */
+DataTable {
+    height: 100%;
+}
+
+DataTable > .datatable--header {
+    background: $primary;
+    text-style: bold;
+}
+
+DataTable > .datatable--cursor {
+    background: $secondary;
+}
+
+/* ===== Progress Bar ===== */
+ProgressBar {
+    padding: 0 1;
+}
+
+ProgressBar > .bar--bar {
+    color: $success;
+}
+
+ProgressBar > .bar--complete {
+    color: $success;
+}
+
+/* ===== Loading/Spinner ===== */
+LoadingIndicator {
+    background: transparent;
+}
+
+/* ===== Notifications ===== */
+Toast {
+    background: $surface-darken-2;
+    border: solid $primary;
+}
+
+

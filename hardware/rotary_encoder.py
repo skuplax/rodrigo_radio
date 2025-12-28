@@ -53,9 +53,6 @@ class VolumeController:
         
         # Start background thread for time-based limiting
         self._start_time_limit_thread()
-        
-        logger.info(f"Volume controller initialized (control: {mixer_control}, card: {card}, base max: {max_db}dB, "
-                   f"time limits: day={time_limit_day_db}dB, evening={time_limit_evening_db}dB, night={time_limit_night_db}dB)")
     
     def _get_control_numid(self) -> Optional[int]:
         """Get the numid for the mixer control (cached after first lookup)."""
@@ -214,7 +211,6 @@ class VolumeController:
                     # Check if current volume exceeds the new limit
                     if current_db_value > new_max_db:
                         # Current volume exceeds new limit, reduce it
-                        logger.info(f"Time-based limit changed: reducing volume from {current_db_value:.2f}dB to {new_max_db:.2f}dB (offset: {db_offset}dB)")
                         # Set volume to the new maximum
                         db_raw = int(new_max_db * 100)
                         numid = self._get_control_numid()
@@ -228,7 +224,6 @@ class VolumeController:
                             if result.returncode == 0:
                                 # Update current volume percentage
                                 self._current_volume = self._db_to_percentage(new_max_db)
-                                logger.info(f"Volume reduced to {new_max_db:.2f}dB ({self._current_volume}%)")
                         else:
                             # Fallback: use percentage
                             max_percent = self._db_to_percentage(new_max_db)
@@ -240,14 +235,9 @@ class VolumeController:
                             )
                             if result.returncode == 0:
                                 self._current_volume = max_percent
-                                logger.info(f"Volume reduced to {new_max_db:.2f}dB ({max_percent}%)")
-                    else:
-                        logger.debug(f"Time-based limit updated: max_db={new_max_db:.2f}dB (offset: {db_offset}dB), current volume={current_db_value:.2f}dB")
-                else:
-                    logger.debug(f"Time-based limit updated: max_db={new_max_db:.2f}dB (offset: {db_offset}dB)")
             except Exception as e:
-                logger.debug(f"Error checking current volume for time-based limit: {e}")
-                logger.debug(f"Time-based limit updated: max_db={new_max_db:.2f}dB (offset: {db_offset}dB)")
+                # Silently handle errors in time-based limit updates
+                pass
     
     def _start_time_limit_thread(self):
         """Start background thread that periodically updates time-based volume limits."""
@@ -261,7 +251,6 @@ class VolumeController:
         
         self._time_limit_thread = threading.Thread(target=time_limit_worker, daemon=True)
         self._time_limit_thread.start()
-        logger.info("Time-based volume limiting thread started")
     
     def _db_to_percentage(self, db_value: float) -> int:
         """
@@ -499,7 +488,6 @@ class VolumeController:
         if self._time_limit_thread and self._time_limit_thread.is_alive():
             self._time_limit_stop.set()
             self._time_limit_thread.join(timeout=2.0)
-            logger.info("Time-based volume limiting thread stopped")
 
 
 class RotaryEncoder:
@@ -573,14 +561,11 @@ class RotaryEncoder:
             self.dt.when_activated = self._on_dt_change
             self.dt.when_deactivated = self._on_dt_change
             
-            logger.info(f"Rotary encoder initialized: CLK=GPIO{self.clk_pin}, DT=GPIO{self.dt_pin}")
-            
             # Set up switch/button if provided
             if self.sw_pin is not None:
                 from gpiozero import Button
                 self.sw = Button(self.sw_pin, pull_up=True, bounce_time=0.1)
                 self.sw.when_pressed = self._on_switch_press
-                logger.info(f"Rotary encoder switch initialized: GPIO{self.sw_pin}")
             
         except Exception as e:
             logger.error(f"Error setting up rotary encoder: {e}")
@@ -637,15 +622,12 @@ class RotaryEncoder:
     
     def _rotate_clockwise(self):
         """Handle clockwise rotation (volume up)."""
-        logger.debug("Rotary encoder: clockwise rotation (volume up)")
-        
         # Check if already at max volume before trying to increase
         current_volume = self.volume_controller.get_volume()
         if current_volume >= 100:
             # Already at max, play beep to indicate limit reached
             from utils.sound_feedback import play_max_volume_beep
             play_max_volume_beep()
-            logger.debug("Volume already at maximum, playing beep")
             return
         
         # Not at max, proceed with volume increase
@@ -660,7 +642,6 @@ class RotaryEncoder:
     
     def _rotate_counterclockwise(self):
         """Handle counter-clockwise rotation (volume down)."""
-        logger.debug("Rotary encoder: counter-clockwise rotation (volume down)")
         self.volume_controller.adjust_volume(-self.volume_step)
         current_volume = self.volume_controller.get_volume()
         
@@ -672,7 +653,6 @@ class RotaryEncoder:
     
     def _on_switch_press(self):
         """Handle switch/button press (mute toggle)."""
-        logger.info("Rotary encoder switch pressed - toggling mute")
         self.volume_controller.toggle_mute()
         
         if self.on_mute_toggle:
@@ -692,11 +672,9 @@ class RotaryEncoder:
         # Close volume controller to stop time-based limiting thread
         if self.volume_controller:
             self.volume_controller.close()
-        logger.info("Rotary encoder closed")
     
     def wait(self):
         """Wait for encoder input (blocks forever)."""
-        logger.info("Rotary encoder waiting for input...")
         pause()
 
 

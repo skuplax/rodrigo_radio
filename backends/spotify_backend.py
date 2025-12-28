@@ -6,7 +6,7 @@ import subprocess
 import threading
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 try:
     import spotipy
@@ -47,6 +47,9 @@ class SpotifyBackend(BaseBackend):
     """Spotify playback backend using raspotify and Spotify Web API."""
     
     def __init__(self):
+        # #region agent log
+        import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:49", "message": "SpotifyBackend.__init__ entry", "data": {"SPOTIPY_AVAILABLE": SPOTIPY_AVAILABLE, "DBUS_AVAILABLE": DBUS_AVAILABLE}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+        # #endregion
         super().__init__()
         self._spotify: Optional[spotipy.Spotify] = None
         self._device_id: Optional[str] = None
@@ -68,18 +71,30 @@ class SpotifyBackend(BaseBackend):
         self._last_token_refresh = 0
         self._token_refresh_interval = 3 * 24 * 3600  # Refresh every 3 days (tokens expire after ~60 days of inactivity, so 3 days provides good safety margin)
         self._last_api_call = 0  # Track last API call time for rate limiting
-        self._min_api_call_interval = 0.2  # Minimum seconds between API calls (200ms)
+        self._min_api_call_interval = 0.5  # Minimum seconds between API calls (500ms - increased to reduce rate limits)
         self._rate_limit_backoff = 1.0  # Current backoff delay for rate limits (starts at 1 second)
-        self._max_rate_limit_backoff = 60.0  # Maximum backoff delay (60 seconds)
+        self._max_rate_limit_backoff = 120.0  # Maximum backoff delay (120 seconds - increased for better rate limit handling)
         self._last_raspotify_restart = 0  # Track last restart time to avoid restart loops
         self._raspotify_restart_cooldown = 30.0  # Minimum seconds between restarts (30 seconds)
         
         if not SPOTIPY_AVAILABLE:
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:78", "message": "SPOTIPY_AVAILABLE is False", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             raise BackendError("spotipy is not installed. Install it with: pip3 install --user --break-system-packages spotipy")
         
+        # #region agent log
+        import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:80", "message": "About to call _init_spotify", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+        # #endregion
         self._init_spotify()
+        # #region agent log
+        import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:81", "message": "_init_spotify completed", "data": {"spotify_client_exists": self._spotify is not None}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+        # #endregion
         self._init_mpris()
         self._start_token_refresh_thread()
+        # #region agent log
+        import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:83", "message": "SpotifyBackend.__init__ exit", "data": {"spotify_client_exists": self._spotify is not None, "mpris_available": self._mpris_player is not None}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+        # #endregion
     
     def _load_config(self) -> dict:
         """Load Spotify API configuration from file."""
@@ -109,8 +124,17 @@ class SpotifyBackend(BaseBackend):
     
     def _init_spotify(self):
         """Initialize Spotify client with OAuth."""
+        # #region agent log
+        import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:110", "message": "_init_spotify entry", "data": {"CONFIG_FILE": str(CONFIG_FILE)}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+        # #endregion
         try:
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:113", "message": "About to load config", "data": {"config_file_exists": CONFIG_FILE.exists()}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             config = self._load_config()  # This already stores config in self._config
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:114", "message": "Config loaded", "data": {"has_client_id": "client_id" in config, "has_client_secret": "client_secret" in config, "has_refresh_token": "refresh_token" in config}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             
             cache_path = CACHE_DIR / ".spotify_cache"
             
@@ -149,14 +173,29 @@ class SpotifyBackend(BaseBackend):
                 logger.info("Updated cache file with refresh token from config")
             
             # Create Spotify client
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:152", "message": "About to create Spotify client", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             self._spotify = spotipy.Spotify(auth_manager=auth_manager)
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:153", "message": "Spotify client created", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             
             # Test authentication by making a simple API call
             try:
+                # #region agent log
+                import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:156", "message": "About to test auth with current_user()", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                # #endregion
                 self._spotify.current_user()
+                # #region agent log
+                import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:157", "message": "Auth test successful", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                # #endregion
                 logger.info("Initialized Spotify Web API client - authentication verified")
                 self._last_token_refresh = time.time()
             except Exception as auth_error:
+                # #region agent log
+                import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:159", "message": "Auth test failed", "data": {"error": str(auth_error), "error_type": type(auth_error).__name__}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                # #endregion
                 error_str = str(auth_error).lower()
                 # Check if refresh token has expired
                 if 'invalid_grant' in error_str or 'refresh_token' in error_str and ('expired' in error_str or 'invalid' in error_str):
@@ -171,6 +210,9 @@ class SpotifyBackend(BaseBackend):
                     # The auth_manager should handle refresh automatically on next API call
                 
         except Exception as e:
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "spotify_backend.py:173", "message": "_init_spotify exception", "data": {"error": str(e), "error_type": type(e).__name__}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             logger.error(f"Failed to initialize Spotify client: {e}")
             raise BackendError(f"Failed to initialize Spotify client: {e}")
     
@@ -219,66 +261,111 @@ class SpotifyBackend(BaseBackend):
         
         logger.info("Restarting raspotify service to resolve connection issues...")
         
+        def _run_systemctl_command(cmd: List[str], use_sudo: bool = False) -> tuple[bool, str]:
+            """Run systemctl command, optionally with sudo fallback."""
+            command = ['sudo'] + cmd if use_sudo else cmd
+            try:
+                result = subprocess.run(
+                    command,
+                    timeout=10,
+                    capture_output=True,
+                    text=True
+                )
+                error_msg = result.stderr or result.stdout or ''
+                return result.returncode == 0, error_msg
+            except subprocess.TimeoutExpired:
+                return False, "Command timed out"
+            except FileNotFoundError:
+                return False, f"Command not found: {command[0]}"
+            except Exception as e:
+                return False, str(e)
+        
         try:
-            # Stop the service first
-            result = subprocess.run(
-                ['systemctl', 'stop', 'raspotify'],
-                timeout=10,
-                capture_output=True,
-                text=True
-            )
+            # Try to stop the service first (without sudo)
+            success, error_msg = _run_systemctl_command(['systemctl', 'stop', 'raspotify'])
             
-            if result.returncode != 0:
-                logger.warning(f"Failed to stop raspotify: {result.stderr or result.stdout}")
-                # Continue anyway - might already be stopped
+            if not success:
+                # If permission denied, try with sudo
+                if "Authentication" in error_msg or "permission" in error_msg.lower() or "denied" in error_msg.lower():
+                    logger.debug("Permission denied, trying with sudo...")
+                    success, error_msg = _run_systemctl_command(['systemctl', 'stop', 'raspotify'], use_sudo=True)
+                
+                if not success:
+                    logger.warning(f"Failed to stop raspotify: {error_msg}")
+                    # Check if it's already stopped
+                    if self._check_raspotify_running():
+                        logger.warning("raspotify is still running after stop attempt")
+                        # Try force kill as last resort
+                        try:
+                            subprocess.run(['pkill', '-f', 'librespot'], timeout=5, capture_output=True)
+                            time.sleep(0.5)
+                        except Exception as e:
+                            logger.debug(f"pkill failed: {e}")
+                    else:
+                        logger.debug("raspotify appears to already be stopped")
+                else:
+                    logger.debug("Successfully stopped raspotify")
+            else:
+                logger.debug("Successfully stopped raspotify")
             
-            # Wait a moment for it to fully stop
-            time.sleep(1.0)
+            # Wait for it to fully stop
+            time.sleep(1.5)
+            
+            # Verify it's stopped
+            if self._check_raspotify_running():
+                logger.warning("raspotify still appears to be running after stop, waiting longer...")
+                time.sleep(2.0)
             
             # Start the service
-            result = subprocess.run(
-                ['systemctl', 'start', 'raspotify'],
-                timeout=10,
-                capture_output=True,
-                text=True
-            )
+            success, error_msg = _run_systemctl_command(['systemctl', 'start', 'raspotify'])
             
-            if result.returncode == 0:
+            if not success:
+                # If permission denied, try with sudo
+                if "Authentication" in error_msg or "permission" in error_msg.lower() or "denied" in error_msg.lower():
+                    logger.debug("Permission denied, trying with sudo...")
+                    success, error_msg = _run_systemctl_command(['systemctl', 'start', 'raspotify'], use_sudo=True)
+            
+            if success:
                 # Give the service time to start and register with Spotify
                 logger.info("Waiting for raspotify to restart and register with Spotify API...")
-                for i in range(5):  # Wait up to 5 seconds
-                    time.sleep(1)
+                max_wait = 10  # Increased from 5 to 10 seconds
+                check_interval = 1
+                
+                for i in range(0, max_wait, check_interval):
+                    time.sleep(check_interval)
                     if self._check_raspotify_running():
-                        logger.info(f"Successfully restarted raspotify service (verified after {i+1}s)")
-                        self._last_raspotify_restart = time.time()
-                        # Reset device ID so it will be re-discovered
-                        self._device_id = None
-                        self._last_device_check = 0
-                        return True
+                        # Additional verification: check service status
+                        status_success, _ = _run_systemctl_command(['systemctl', 'is-active', '--quiet', 'raspotify'])
+                        if status_success:
+                            logger.info(f"Successfully restarted raspotify service (verified after {i+check_interval}s)")
+                            self._last_raspotify_restart = time.time()
+                            # Reset device ID so it will be re-discovered
+                            self._device_id = None
+                            self._last_device_check = 0
+                            # Give it a bit more time to fully register with Spotify
+                            time.sleep(2.0)
+                            return True
                 
                 # Final check
                 if self._check_raspotify_running():
-                    logger.info("Successfully restarted raspotify service (verified after 5s)")
-                    self._last_raspotify_restart = time.time()
-                    self._device_id = None
-                    self._last_device_check = 0
-                    return True
-                else:
-                    logger.warning("raspotify restart command succeeded but service is not active after 5s")
-                    return False
+                    status_success, _ = _run_systemctl_command(['systemctl', 'is-active', '--quiet', 'raspotify'])
+                    if status_success:
+                        logger.info("Successfully restarted raspotify service (verified after 10s)")
+                        self._last_raspotify_restart = time.time()
+                        self._device_id = None
+                        self._last_device_check = 0
+                        time.sleep(2.0)
+                        return True
+                
+                logger.warning("raspotify restart command succeeded but service is not active after 10s")
+                return False
             else:
-                error_msg = result.stderr or result.stdout or ''
                 logger.warning(f"Failed to restart raspotify service: {error_msg}")
                 if "Authentication" in error_msg or "permission" in error_msg.lower():
                     logger.error("Permission denied. Ensure polkit rule is installed: /etc/polkit-1/rules.d/50-rodrigo-radio.rules")
+                    logger.error("Or ensure the user has sudo privileges for systemctl commands")
                 return False
                 
-        except subprocess.TimeoutExpired:
-            logger.warning("Timeout while restarting raspotify service")
-            return False
-        except FileNotFoundError:
-            logger.debug("systemctl not found - cannot restart raspotify service")
-            return False
         except Exception as e:
             logger.warning(f"Error restarting raspotify service: {e}")
             return False
@@ -301,16 +388,37 @@ class SpotifyBackend(BaseBackend):
         )
         
         if is_rate_limit:
+            # Try to extract retry-after from SpotifyException if available
+            wait_time = self._rate_limit_backoff
+            if isinstance(error, spotipy.exceptions.SpotifyException) and hasattr(error, 'headers'):
+                retry_after = error.headers.get('Retry-After') if error.headers else None
+                if retry_after:
+                    try:
+                        wait_time = int(retry_after)
+                        logger.info(f"Spotify API provided retry-after: {wait_time}s")
+                    except (ValueError, TypeError):
+                        pass
+                elif 'retry will occur after: none' in error_str:
+                    # When retry-after is None, use a longer wait (60 seconds)
+                    wait_time = 60.0
+                    logger.warning("Spotify API rate limit with no retry-after time. Waiting 60s before retry.")
+            
             logger.warning(
-                f"Rate limit hit. Waiting {self._rate_limit_backoff:.1f}s before retry. "
+                f"Rate limit hit. Waiting {wait_time:.1f}s before retry. "
                 f"Consider reducing API call frequency."
             )
-            time.sleep(self._rate_limit_backoff)
-            # Exponential backoff: double the delay, up to max
-            self._rate_limit_backoff = min(
-                self._rate_limit_backoff * 2,
-                self._max_rate_limit_backoff
-            )
+            time.sleep(wait_time)
+            # Exponential backoff: double the delay, up to max (but don't reduce if we used a longer wait)
+            if wait_time >= self._rate_limit_backoff:
+                self._rate_limit_backoff = min(
+                    wait_time * 1.5,  # Increase from the wait time we used
+                    self._max_rate_limit_backoff
+                )
+            else:
+                self._rate_limit_backoff = min(
+                    self._rate_limit_backoff * 2,
+                    self._max_rate_limit_backoff
+                )
             return True
         
         # Reset backoff on successful calls (will be reset when API call succeeds)
@@ -327,14 +435,14 @@ class SpotifyBackend(BaseBackend):
         
         self._last_api_call = time.time()
     
-    def _api_call_with_retry(self, func, *args, max_retries=3, **kwargs):
+    def _api_call_with_retry(self, func, *args, max_retries=5, **kwargs):
         """
         Execute an API call with rate limit handling and retries.
         
         Args:
             func: The API function to call
             *args: Positional arguments for the function
-            max_retries: Maximum number of retries for rate limits
+            max_retries: Maximum number of retries for rate limits (default 5)
             **kwargs: Keyword arguments for the function
             
         Returns:
@@ -351,7 +459,17 @@ class SpotifyBackend(BaseBackend):
                 self._rate_limit_backoff = 1.0
                 return result
             except spotipy.exceptions.SpotifyException as e:
-                if e.http_status == 429 or self._handle_rate_limit(e):
+                # Handle 500 errors specially - they're often transient but shouldn't be retried aggressively
+                if e.http_status == 500:
+                    if attempt < max_retries and attempt < 2:  # Only retry 500 errors once
+                        logger.debug(f"Server error (500) on attempt {attempt + 1}, retrying once...")
+                        time.sleep(0.5)  # Brief delay before retry
+                        continue
+                    else:
+                        # Don't retry 500 errors more than once - they're usually "nothing to transfer" type errors
+                        logger.debug(f"Server error (500) - not retrying further: {e}")
+                        raise
+                elif e.http_status == 429 or self._handle_rate_limit(e):
                     if attempt < max_retries:
                         logger.debug(f"Rate limit on attempt {attempt + 1}/{max_retries + 1}, retrying...")
                         continue
@@ -359,7 +477,7 @@ class SpotifyBackend(BaseBackend):
                         logger.error(f"Max retries ({max_retries}) reached for rate limit")
                         raise
                 else:
-                    # Not a rate limit error, re-raise
+                    # Not a rate limit or 500 error, re-raise immediately
                     raise
             except Exception as e:
                 if self._handle_rate_limit(e):
@@ -756,11 +874,20 @@ class SpotifyBackend(BaseBackend):
         Raises:
             BackendError: If device cannot be found and no fallback is available
         """
+        # #region agent log
+        import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "B", "location": "spotify_backend.py:745", "message": "_ensure_device entry", "data": {"retry": retry, "current_device_id": self._device_id}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+        # #endregion
         current_time = time.time()
         
         # Check if we need to refresh device ID
         if not self._device_id or (current_time - self._last_device_check) > self._device_check_interval:
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "B", "location": "spotify_backend.py:763", "message": "About to find device", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             self._device_id = self._find_raspotify_device(retry=retry)
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "B", "location": "spotify_backend.py:764", "message": "Device found result", "data": {"device_id": self._device_id}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             self._last_device_check = current_time
         
         # Only check/start raspotify if we don't have a device yet
@@ -810,6 +937,9 @@ class SpotifyBackend(BaseBackend):
             
             # If still no device, check for MPRIS fallback
             if not self._device_id:
+                # #region agent log
+                import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "B", "location": "spotify_backend.py:812", "message": "No device found, checking MPRIS fallback", "data": {"mpris_available": self._mpris_player is not None}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                # #endregion
                 # If MPRIS is available, we can still control playback (but not start playlists)
                 if self._mpris_player:
                     logger.warning(
@@ -817,8 +947,14 @@ class SpotifyBackend(BaseBackend):
                         "Basic controls (play/pause/next/previous) will work, but starting new playlists may fail. "
                         "The device should appear in the API after first manual connection from Spotify app."
                     )
+                    # #region agent log
+                    import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "B", "location": "spotify_backend.py:820", "message": "Using MPRIS fallback", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                    # #endregion
                     return True  # Allow operation with MPRIS fallback
                 
+                # #region agent log
+                import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "B", "location": "spotify_backend.py:822", "message": "No device and no MPRIS, raising error", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                # #endregion
                 play_device_error_beep()
                 raise BackendError(
                     "Raspotify device not found in Spotify API and MPRIS fallback unavailable. "
@@ -830,12 +966,15 @@ class SpotifyBackend(BaseBackend):
                     "Note: After first activation, the device should work automatically on subsequent boots."
                 )
         
+        # #region agent log
+        import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "B", "location": "spotify_backend.py:833", "message": "_ensure_device exit success", "data": {"device_id": self._device_id}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+        # #endregion
         return True
     
     def _ensure_device_active(self) -> bool:
         """
         Ensure the device is active (selected in Spotify).
-        If inactive, transfer playback to it.
+        If inactive, transfer playback to it (only if something is already playing).
         
         Returns:
             True if device is active or was successfully activated, False otherwise
@@ -845,7 +984,7 @@ class SpotifyBackend(BaseBackend):
         
         try:
             # Get current device list
-            devices = self._api_call_with_retry(self._spotify.devices)
+            devices = self._api_call_with_retry(self._spotify.devices, max_retries=2)
             device_list = devices.get('devices', [])
             
             # Find our device and check if it's active
@@ -856,13 +995,34 @@ class SpotifyBackend(BaseBackend):
                         logger.debug(f"Device {self._device_id} is already active")
                         return True
                     else:
-                        # Device is inactive, transfer playback to it
+                        # Device is inactive - check if there's anything playing to transfer
+                        # transfer_playback requires active playback somewhere, otherwise returns 500
+                        try:
+                            current_playback = self._api_call_with_retry(
+                                self._spotify.current_playback, 
+                                max_retries=1
+                            )
+                            has_active_playback = current_playback and current_playback.get('is_playing', False)
+                        except Exception as e:
+                            logger.debug(f"Could not check current playback: {e}")
+                            has_active_playback = False
+                        
+                        if not has_active_playback:
+                            # Nothing is playing - can't transfer, but device is available
+                            # When we start playback, it will automatically select this device
+                            logger.debug(f"Device {self._device_id} is inactive but no active playback to transfer. Device will be selected when playback starts.")
+                            return True
+                        
+                        # Device is inactive and there's active playback - try to transfer
                         logger.info(f"Device {self._device_id} is inactive, transferring playback to it...")
                         try:
+                            # Use fewer retries for transfer_playback since 500 errors are common when nothing to transfer
+                            # and we've already checked above, so if it fails here it's a real error
                             self._api_call_with_retry(
                                 self._spotify.transfer_playback,
                                 device_id=self._device_id,
-                                force_play=False
+                                force_play=False,
+                                max_retries=1  # Reduced retries to avoid cascading API calls
                             )
                             # Give it a moment to transfer
                             time.sleep(0.5)
@@ -885,18 +1045,21 @@ class SpotifyBackend(BaseBackend):
                                     self._last_device_check = 0
                                 return False
                             elif e.http_status == 429:
-                                logger.warning("Rate limit hit while transferring playback - attempting to restart raspotify...")
-                                # Try restarting raspotify when hitting rate limits during device activation
-                                if self._restart_raspotify_service():
-                                    # Wait for device to reappear after restart
-                                    time.sleep(3.0)
-                                    # Force device refresh
-                                    self._device_id = None
-                                    self._last_device_check = 0
+                                logger.warning("Rate limit hit while transferring playback - skipping transfer")
+                                # Don't restart raspotify on rate limit - that makes it worse
+                                # Just return False and let the caller handle it
                                 return False
+                            elif e.http_status == 500:
+                                # 500 error usually means nothing to transfer - but we checked above
+                                # This might be a transient server error, but don't retry aggressively
+                                logger.warning(f"Server error (500) when transferring playback: {e}. Device may still be usable.")
+                                # Return True anyway - device exists and will be selected when playback starts
+                                return True
                             else:
                                 logger.warning(f"Failed to transfer playback to device: {e}")
-                                return False
+                                # For other errors, device might still be usable
+                                # Return True to allow playback to proceed - it will select the device automatically
+                                return True
             
             # Device not found in list - might have disconnected
             logger.warning(f"Device {self._device_id} not found in device list - device may have disconnected")
@@ -995,18 +1158,33 @@ class SpotifyBackend(BaseBackend):
             **kwargs:
                 - playlist_id: Playlist ID (alternative to source_id)
         """
+        # #region agent log
+        import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:989", "message": "play() entry", "data": {"source_id": source_id, "kwargs": kwargs, "spotify_client_exists": self._spotify is not None}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+        # #endregion
         try:
             if not self._spotify:
+                # #region agent log
+                import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:999", "message": "Spotify client not initialized", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                # #endregion
                 raise BackendError("Spotify client not initialized")
             
             # Get URI to play
             playlist_id = kwargs.get('playlist_id') or source_id
             uri = self._normalize_uri(playlist_id)
             self._current_playlist_id = uri
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1005", "message": "URI normalized", "data": {"uri": uri}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             
             # Ensure we have a device (with automatic activation retries)
             # This will also check for raspotify if needed
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1009", "message": "About to ensure device", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             self._ensure_device(retry=True)
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1010", "message": "Device ensured", "data": {"device_id": self._device_id}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             
             # If we have a device ID, raspotify is likely running
             # Only check/start if we don't have a device yet
@@ -1030,7 +1208,13 @@ class SpotifyBackend(BaseBackend):
             # Ensure device is active (selected in Spotify) before trying to play
             # Inactive devices will return 404 when trying to play
             if self._device_id:
+                # #region agent log
+                import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1032", "message": "About to ensure device active", "data": {"device_id": self._device_id}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                # #endregion
                 if not self._ensure_device_active():
+                    # #region agent log
+                    import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1034", "message": "Device activation failed", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                    # #endregion
                     # Device activation failed, try to refresh device
                     logger.warning("Device activation failed, refreshing device...")
                     # Try restarting raspotify if activation failed (could be connection issue)
@@ -1042,6 +1226,68 @@ class SpotifyBackend(BaseBackend):
                     self._ensure_device(retry=True)
                     if self._device_id:
                         self._ensure_device_active()
+                else:
+                    # #region agent log
+                    import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1044", "message": "Device activation successful", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                    # #endregion
+            
+            # Verify playback is actually stopped before starting new playback
+            # This is important because the API might still report playback as active even after stop()
+            if self._device_id:
+                max_cleanup_attempts = 3
+                for attempt in range(max_cleanup_attempts):
+                    try:
+                        playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=1)
+                        if playback and playback.get('is_playing', False):
+                            if attempt == 0:
+                                logger.warning("Playback still active before starting new playback, forcing stop...")
+                            else:
+                                logger.warning(f"Playback still active (attempt {attempt + 1}/{max_cleanup_attempts}), trying MPRIS...")
+                            
+                            # Try MPRIS first (more reliable for stopping)
+                            if self._mpris_player:
+                                try:
+                                    self._mpris_player.Stop()
+                                    time.sleep(0.2)
+                                    self._mpris_player.Pause()
+                                    time.sleep(0.3)
+                                except Exception as e:
+                                    logger.debug(f"MPRIS stop attempt failed: {e}")
+                            
+                            # Also try Web API pause
+                            try:
+                                self._api_call_with_retry(
+                                    self._spotify.pause_playback,
+                                    device_id=self._device_id,
+                                    max_retries=1
+                                )
+                                time.sleep(0.3)
+                            except Exception:
+                                pass
+                            
+                            # Check again
+                            playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=1)
+                            if not playback or not playback.get('is_playing', False):
+                                logger.debug("Playback successfully stopped")
+                                break
+                            
+                            if attempt == max_cleanup_attempts - 1:
+                                logger.error("Playback still active after multiple cleanup attempts, restarting raspotify...")
+                                if self._restart_raspotify_service():
+                                    time.sleep(2.0)
+                                    # Reset device to force re-discovery
+                                    self._device_id = None
+                                    self._last_device_check = 0
+                                    self._ensure_device(retry=True)
+                                    if self._device_id:
+                                        self._ensure_device_active()
+                        else:
+                            # Playback is stopped, we're good
+                            break
+                    except Exception as e:
+                        logger.debug(f"Could not verify playback state: {e}")
+                        # If we can't check, assume it's stopped and continue
+                        break
             
             # Get track count and pick a random starting position for shuffle
             track_count = self._get_track_count(uri)
@@ -1053,6 +1299,9 @@ class SpotifyBackend(BaseBackend):
             
             # Start playback
             try:
+                # #region agent log
+                import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1055", "message": "About to start playback", "data": {"uri": uri, "device_id": self._device_id, "random_offset": random_offset}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                # #endregion
                 if random_offset is not None:
                     # Start from random position
                     self._api_call_with_retry(
@@ -1061,6 +1310,9 @@ class SpotifyBackend(BaseBackend):
                         context_uri=uri,
                         offset={'position': random_offset}
                     )
+                    # #region agent log
+                    import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1064", "message": "Playback started from random position", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                    # #endregion
                     logger.info(f"Started playback from random position: {uri}")
                 else:
                     # Start from beginning (single track or couldn't get count)
@@ -1069,6 +1321,9 @@ class SpotifyBackend(BaseBackend):
                         device_id=self._device_id,
                         context_uri=uri
                     )
+                    # #region agent log
+                    import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1072", "message": "Playback started from beginning", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                    # #endregion
                     logger.info(f"Started playback: {uri}")
                 
                 # Enable shuffle mode (with small delay to avoid rate limits)
@@ -1079,7 +1334,7 @@ class SpotifyBackend(BaseBackend):
                         state=True,
                         device_id=self._device_id
                     )
-                    logger.info("Shuffle mode enabled")
+                    logger.debug("Shuffle mode enabled")
                 except Exception as shuffle_error:
                     logger.warning(f"Could not enable shuffle mode: {shuffle_error}")
                     # Continue anyway - playback started successfully
@@ -1096,6 +1351,9 @@ class SpotifyBackend(BaseBackend):
                 
                 return True
             except spotipy.exceptions.SpotifyException as e:
+                # #region agent log
+                import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1195", "message": "SpotifyException in play()", "data": {"http_status": e.http_status, "error": str(e)}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                # #endregion
                 if e.http_status == 401:
                     # Token expired or invalid - try to refresh
                     logger.warning("Received 401 Unauthorized - token may be expired, attempting refresh...")
@@ -1136,7 +1394,7 @@ class SpotifyBackend(BaseBackend):
                                 state=True,
                                 device_id=self._device_id
                             )
-                            logger.info("Shuffle mode enabled after token refresh")
+                            logger.debug("Shuffle mode enabled after token refresh")
                         except Exception as shuffle_error:
                             logger.warning(f"Could not enable shuffle mode: {shuffle_error}")
                         
@@ -1218,7 +1476,7 @@ class SpotifyBackend(BaseBackend):
                                         state=True,
                                         device_id=self._device_id
                                     )
-                                    logger.info("Shuffle mode enabled after device activation")
+                                    logger.debug("Shuffle mode enabled after device activation")
                                 except Exception as shuffle_error:
                                     logger.warning(f"Could not enable shuffle mode: {shuffle_error}")
                                 
@@ -1268,8 +1526,14 @@ class SpotifyBackend(BaseBackend):
                     raise BackendError(f"Spotify API error: {e}")
                     
         except BackendError:
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1270", "message": "BackendError in play()", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             raise
         except Exception as e:
+            # #region agent log
+            import json; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "spotify_backend.py:1272", "message": "Exception in play()", "data": {"error": str(e), "error_type": type(e).__name__}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+            # #endregion
             # Check if it's a network-related error
             error_str = str(e).lower()
             error_type = type(e).__name__.lower()
@@ -1398,80 +1662,95 @@ class SpotifyBackend(BaseBackend):
     def stop(self) -> bool:
         """Stop playback completely."""
         try:
-            if not self._spotify:
-                return True  # Already stopped
+            # Stop monitoring thread first to avoid race conditions
+            self._stop_monitoring()
             
-            try:
-                self._ensure_device()
-                # Pause playback to stop it
+            # Try Web API first
+            web_api_stopped = False
+            if self._spotify:
                 try:
-                    self._api_call_with_retry(
-                        self._spotify.pause_playback,
-                        device_id=self._device_id
-                    )
-                    logger.info("Paused Spotify playback (stop)")
-                except spotipy.exceptions.SpotifyException as e:
-                    if e.http_status == 401:
-                        logger.debug("Received 401 Unauthorized during stop pause - attempting token refresh...")
-                        try:
-                            self._init_spotify()
-                            self._api_call_with_retry(
-                                self._spotify.pause_playback,
-                                device_id=self._device_id
-                            )
-                            logger.info("Paused Spotify playback (stop) after token refresh")
-                        except Exception:
-                            logger.debug("Could not pause during stop after token refresh")
-                    elif e.http_status == 429:
-                        logger.warning("Rate limit hit during stop - continuing anyway")
-                    else:
-                        raise
-                
-                # Wait a moment and verify it's actually stopped
-                time.sleep(0.2)
-                
-                # Check if it's still playing and force stop if needed
-                try:
-                    playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=1)
-                    if playback and playback.get('is_playing', False):
-                        # Still playing, try to pause again more aggressively
-                        logger.warning("Spotify still playing after pause, forcing stop...")
+                    self._ensure_device()
+                    # Pause playback to stop it
+                    try:
                         self._api_call_with_retry(
                             self._spotify.pause_playback,
                             device_id=self._device_id
                         )
-                        time.sleep(0.2)
-                        
-                        # Check one more time
-                        playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=1)
-                        if playback and playback.get('is_playing', False):
-                            logger.error("Spotify still playing after multiple stop attempts!")
-                except spotipy.exceptions.SpotifyException as e:
-                    if e.http_status == 401:
-                        logger.debug("Received 401 Unauthorized during stop - token may need refresh")
-                        # Try to refresh and continue
-                        try:
-                            self._init_spotify()
-                        except Exception:
-                            pass  # Continue anyway
-                    elif e.http_status == 429:
-                        logger.debug("Rate limit hit while verifying stop - continuing anyway")
-                    else:
-                        logger.debug(f"Could not verify stop status: {e}")
-                except Exception as e:
-                    logger.debug(f"Could not verify stop status: {e}")
+                        logger.info("Paused Spotify playback (stop)")
+                        web_api_stopped = True
+                    except spotipy.exceptions.SpotifyException as e:
+                        if e.http_status == 401:
+                            logger.debug("Received 401 Unauthorized during stop pause - attempting token refresh...")
+                            try:
+                                self._init_spotify()
+                                self._api_call_with_retry(
+                                    self._spotify.pause_playback,
+                                    device_id=self._device_id
+                                )
+                                logger.info("Paused Spotify playback (stop) after token refresh")
+                                web_api_stopped = True
+                            except Exception:
+                                logger.debug("Could not pause during stop after token refresh")
+                        elif e.http_status == 429:
+                            logger.warning("Rate limit hit during stop - trying MPRIS fallback")
+                        else:
+                            logger.debug(f"Web API pause failed: {e}, trying MPRIS fallback")
+                    except Exception as e:
+                        logger.debug(f"Web API pause failed: {e}, trying MPRIS fallback")
                     
-            except Exception as e:
-                # If pause fails, log but continue - device might not be available
-                logger.debug(f"Could not pause during stop (may already be stopped): {e}")
+                    # Wait a moment and verify it's actually stopped
+                    if web_api_stopped:
+                        time.sleep(0.3)
+                        
+                        # Check if it's still playing and force stop if needed
+                        try:
+                            playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=1)
+                            if playback and playback.get('is_playing', False):
+                                # Still playing, try to pause again more aggressively
+                                logger.warning("Spotify still playing after pause, forcing stop...")
+                                self._api_call_with_retry(
+                                    self._spotify.pause_playback,
+                                    device_id=self._device_id
+                                )
+                                time.sleep(0.3)
+                                
+                                # Check one more time
+                                playback = self._api_call_with_retry(self._spotify.current_playback, max_retries=1)
+                                if playback and playback.get('is_playing', False):
+                                    logger.error("Spotify still playing after multiple stop attempts!")
+                                    web_api_stopped = False  # Force MPRIS fallback
+                        except spotipy.exceptions.SpotifyException as e:
+                            if e.http_status == 401:
+                                logger.debug("Received 401 Unauthorized during stop verification")
+                            elif e.http_status == 429:
+                                logger.debug("Rate limit hit while verifying stop")
+                            else:
+                                logger.debug(f"Could not verify stop status: {e}")
+                        except Exception as e:
+                            logger.debug(f"Could not verify stop status: {e}")
+                except Exception as e:
+                    # If pause fails, log but continue - device might not be available
+                    logger.debug(f"Could not pause during stop (may already be stopped): {e}")
+            
+            # Fallback to MPRIS if Web API didn't work or verification failed
+            if not web_api_stopped and self._mpris_player:
+                try:
+                    logger.debug("Using MPRIS to stop playback")
+                    self._mpris_player.Stop()
+                    time.sleep(0.2)
+                    # Try pause as well to be sure
+                    try:
+                        self._mpris_player.Pause()
+                    except Exception:
+                        pass
+                    logger.info("Stopped Spotify playback (MPRIS)")
+                except Exception as e:
+                    logger.debug(f"MPRIS stop failed: {e}")
             
             self.set_playing_state(False)
             self._is_paused = False
             self.set_current_item(None)
             self._current_playlist_id = None
-            
-            # Stop monitoring thread
-            self._stop_monitoring()
             
             # Stop token refresh thread
             self._stop_token_refresh_thread()

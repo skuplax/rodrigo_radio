@@ -1,0 +1,12 @@
+# TUI Monitor Dependencies for Rodrigo Radio
+# Install with: pip install -r requirements-tui.txt
+
+# Core TUI framework
+textual>=0.45.0
+rich>=13.0.0
+
+# Already in main project but listed for completeness
+supabase>=2.0.0
+python-dotenv>=1.0.0
+
+

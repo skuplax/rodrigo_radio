@@ -134,6 +134,10 @@ class SupabaseLogHandler(logging.Handler):
         """
         Filter out redundant or unnecessary logs.
         
+        Since we're removing logs at the source, this filter is now minimal:
+        - Filter meta-logging (logs about logging operations)
+        - Filter httpx internal logs
+        
         Returns:
             True if should filter out, False if should log
         """
@@ -152,9 +156,8 @@ class SupabaseLogHandler(logging.Handler):
                 return True
         
         # Filter httpx internal logs
-        if 'httpx' in logger_name or 'httpx' in msg:
-            if '_send_single_request' in action or '_send_single_request' in msg:
-                return True
+        if 'httpx' in logger_name or 'httpx' in msg or 'httpx' in action:
+            return True
         
         return False
     
@@ -208,9 +211,10 @@ class SupabaseLogHandler(logging.Handler):
             
             # Convert timestamp from float to datetime objects
             utc_timestamp = datetime.fromtimestamp(record.created, tz=timezone.utc)
-            # Use Asia/Manila timezone (+08) for local timestamp
-            manila_tz = ZoneInfo('Asia/Manila')
-            local_timestamp = utc_timestamp.astimezone(manila_tz)
+            # Add 8 hours to UTC to get Asia/Manila time (+08)
+            # Store as UTC but with the time value representing Manila time
+            # This way Supabase stores it correctly and it displays as 14:02:31 instead of 06:02:31
+            local_timestamp = utc_timestamp + timedelta(hours=8)
             
             # Extract clean message (without timestamp/log_level prefix)
             clean_message = record.getMessage()
@@ -218,7 +222,7 @@ class SupabaseLogHandler(logging.Handler):
             # Create log entry with individual columns instead of metadata JSON
             entry = {
                 'timestamp': utc_timestamp.isoformat(),  # UTC datetime as ISO string
-                'timestamp_local': local_timestamp.isoformat(),  # Local datetime as ISO string (Asia/Manila)
+                'timestamp_local': local_timestamp.isoformat(),  # UTC+8 hours (represents Manila time)
                 'log_level': log_level,
                 'event_type': event_type,
                 'action': action,

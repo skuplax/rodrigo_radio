@@ -433,6 +433,124 @@ def change_source(source_identifier):
         traceback.print_exc()
 
 
+def play_source(source_identifier, wait_timeout=30):
+    """
+    Trigger playback of a source and wait for it to start.
+    
+    Args:
+        source_identifier: Source index, ID, or label
+        wait_timeout: Maximum seconds to wait for playback to start (default: 30)
+    
+    Returns:
+        True if playback started successfully, False otherwise
+    """
+    import time
+    
+    print("=" * 60)
+    print("TRIGGER PLAYBACK")
+    print("=" * 60)
+    
+    try:
+        source_manager = SourceManager()
+        sources = source_manager.get_sources()
+        
+        if not sources:
+            print("\n✗ No sources configured.")
+            print(f"   Create a sources.json file at: {source_manager.sources_file}")
+            return False
+        
+        # Set the source
+        print(f"\nSetting source to: {source_identifier}")
+        source = source_manager.set_source(source_identifier)
+        
+        if not source:
+            print(f"\n✗ Failed to find source: {source_identifier}")
+            return False
+        
+        source_label = source.get('label', source.get('id', 'Unknown'))
+        source_type = source.get('type', 'Unknown')
+        
+        print(f"\n✓ Source set to: {source_label}")
+        print(f"  Type: {source_type}")
+        
+        # Get the appropriate backend
+        backend = None
+        source_id_to_play = None
+        kwargs = {}
+        
+        if source_type == 'spotify_playlist':
+            from backends.spotify_backend import SpotifyBackend
+            backend = SpotifyBackend()
+            playlist_id = source.get('playlist_id') or source.get('id')
+            source_id_to_play = playlist_id
+            kwargs = {'source_type': source_type, 'playlist_id': playlist_id}
+        elif source_type in ('youtube_channel', 'youtube_playlist'):
+            from backends.youtube_backend import YouTubeBackend
+            backend = YouTubeBackend()
+            if source_type == 'youtube_channel':
+                channel_id = source.get('channel_id') or source.get('id')
+                source_id_to_play = channel_id
+                kwargs = {'source_type': source_type, 'channel_id': channel_id}
+            else:
+                playlist_id = source.get('playlist_id') or source.get('id')
+                source_id_to_play = playlist_id
+                kwargs = {'source_type': source_type, 'playlist_id': playlist_id}
+        else:
+            print(f"\n✗ Unsupported source type: {source_type}")
+            return False
+        
+        # Start playback
+        print(f"\nStarting playback...")
+        try:
+            success = backend.play(source_id_to_play, **kwargs)
+            
+            if not success:
+                print(f"\n✗ Failed to start playback")
+                return False
+            
+            # Wait for playback to actually start
+            print(f"Waiting for playback to start (timeout: {wait_timeout}s)...")
+            start_time = time.time()
+            playback_started = False
+            
+            while time.time() - start_time < wait_timeout:
+                if backend.is_playing():
+                    playback_started = True
+                    break
+                time.sleep(0.5)
+            
+            if playback_started:
+                # Get current track info
+                current_item = backend.get_current_item()
+                if current_item:
+                    print(f"\n✓ Playback started successfully!")
+                    print(f"  Now playing: {current_item}")
+                else:
+                    print(f"\n✓ Playback started successfully!")
+                
+                print("\n" + "=" * 60)
+                print("Playback is active. You can proceed.")
+                print("=" * 60)
+                return True
+            else:
+                print(f"\n⚠ Playback command succeeded but playback not detected within {wait_timeout}s")
+                print("  Playback may have started but verification timed out.")
+                print("  Check player status manually.")
+                return False
+                
+        except Exception as e:
+            print(f"\n✗ Error starting playback: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    except Exception as e:
+        print(f"\n✗ Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def test_spotify():
     """Test Spotify connection and configuration."""
     print("=" * 60)
@@ -739,6 +857,7 @@ Examples:
   %(prog)s test-spotify    Test Spotify connection and configuration
   %(prog)s change-source 0 Change to source at index 0
   %(prog)s change-source "Spotify – Gospel"  Change to source by label
+  %(prog)s play-source "Music - 50s & 60s OPM"  Trigger playback and wait for completion
         """
     )
     
@@ -777,6 +896,19 @@ Examples:
         help='Source identifier: index (0-based), source ID, or source label (partial match supported)'
     )
     
+    # Play source command
+    play_source_parser = subparsers.add_parser('play-source', help='Trigger playback of a source and wait for completion')
+    play_source_parser.add_argument(
+        'source',
+        help='Source identifier: index (0-based), source ID, or source label (partial match supported)'
+    )
+    play_source_parser.add_argument(
+        '-t', '--timeout',
+        type=int,
+        default=30,
+        help='Maximum seconds to wait for playback to start (default: 30)'
+    )
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -800,6 +932,14 @@ Examples:
         except ValueError:
             source_id = args.source
         change_source(source_id)
+    elif args.command == 'play-source':
+        # Try to parse as integer first, otherwise use as string
+        try:
+            source_id = int(args.source)
+        except ValueError:
+            source_id = args.source
+        success = play_source(source_id, wait_timeout=args.timeout)
+        sys.exit(0 if success else 1)
     else:
         parser.print_help()
         sys.exit(1)

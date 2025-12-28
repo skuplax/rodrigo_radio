@@ -181,28 +181,27 @@ class SupabaseBatchLogger:
             attempt: Attempt number (for retries)
             error_message: Error message
         """
-        # Use Asia/Manila timezone (+08) for local timestamp
-        manila_tz = ZoneInfo('Asia/Manila')
-        
         # Convert timestamp to datetime if needed
         if isinstance(timestamp, float):
             utc_dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-            local_dt = utc_dt.astimezone(manila_tz)
         elif isinstance(timestamp, datetime):
             if timestamp.tzinfo is None:
                 # Assume UTC if no timezone
                 utc_dt = timestamp.replace(tzinfo=timezone.utc)
             else:
                 utc_dt = timestamp.astimezone(timezone.utc)
-            local_dt = utc_dt.astimezone(manila_tz)
         else:
             # Fallback to current time
             utc_dt = datetime.now(timezone.utc)
-            local_dt = utc_dt.astimezone(manila_tz)
+        
+        # Add 8 hours to UTC to get Asia/Manila time (+08)
+        # Store as UTC but with the time value representing Manila time
+        # This way Supabase stores it correctly and it displays as 14:02:31 instead of 06:02:31
+        local_dt = utc_dt + timedelta(hours=8)
         
         entry = {
             'timestamp': utc_dt.isoformat(),  # UTC datetime as ISO string
-            'timestamp_local': local_dt.isoformat(),  # Local datetime as ISO string (Asia/Manila)
+            'timestamp_local': local_dt.isoformat(),  # UTC+8 hours (represents Manila time)
             'log_level': log_level,
             'event_type': event_type,
             'action': action,

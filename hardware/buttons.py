@@ -49,7 +49,6 @@ class ButtonHandler:
                     bounce_time=self.bounce_time
                 )
                 self.buttons[name] = button
-                logger.info(f"Configured button '{name}' on GPIO {pin} (NO button, closes to GND when pressed)")
         except Exception as e:
             logger.error(f"Error setting up buttons: {e}")
             raise
@@ -72,19 +71,15 @@ class ButtonHandler:
         
         # Set new callback
         def wrapped_callback():
-            logger.info(f"Button '{button_name}' pressed - invoking callback")
             try:
                 callback()
-                logger.debug(f"Button '{button_name}' callback completed successfully")
             except Exception as e:
                 logger.error(f"Error in button callback for '{button_name}': {e}", exc_info=True)
         
         self.buttons[button_name].when_pressed = wrapped_callback
         self.callbacks[button_name] = callback
-        logger.debug(f"Registered callback for button '{button_name}'")
     
     def wait(self):
         """Wait for button presses (blocks forever)."""
-        logger.info("Button handler waiting for input...")
         pause()
 

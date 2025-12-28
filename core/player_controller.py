@@ -81,7 +81,6 @@ class PlayerController:
                 # Set up callbacks for volume changes
                 self.rotary_encoder.on_volume_change = self._on_volume_change
                 self.rotary_encoder.on_mute_toggle = self._on_mute_toggle
-                logger.info("Rotary encoder initialized for volume control")
             except Exception as e:
                 logger.error(f"Failed to initialize rotary encoder: {e}")
         
@@ -103,7 +102,6 @@ class PlayerController:
         self.button_handler.register_callback('previous', self._on_previous)
         self.button_handler.register_callback('next', self._on_next)
         self.button_handler.register_callback('cycle_source', self._on_cycle_source)
-        logger.info("Button callbacks registered")
     
     def _get_backend_for_source(self, source: dict) -> BaseBackend:
         """
@@ -120,13 +118,17 @@ class PlayerController:
         
         if source_type == 'spotify_playlist':
             if self._spotify_backend is None:
+                # #region agent log
+                import json, time; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "D", "location": "player_controller.py:120", "message": "Creating SpotifyBackend instance", "data": {"source_type": source_type}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                # #endregion
                 self._spotify_backend = SpotifyBackend()
-                logger.info("Created Spotify backend instance (will be reused)")
+                # #region agent log
+                import json, time; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "D", "location": "player_controller.py:122", "message": "SpotifyBackend instance created", "data": {}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                # #endregion
             return self._spotify_backend
         elif source_type in ('youtube_channel', 'youtube_playlist'):
             if self._youtube_backend is None:
                 self._youtube_backend = YouTubeBackend()
-                logger.info("Created YouTube backend instance (will be reused)")
             return self._youtube_backend
         else:
             raise ValueError(f"Unknown source type: {source_type}")
@@ -145,12 +147,9 @@ class PlayerController:
         source_id = source.get('id')
         label = source.get('label', source_id)
         
-        logger.info(f"Attempting to play source: {label} (type: {source_type})")
-        
         # Check if this source is still the target (might have been cancelled)
         with self._lock:
             if self._target_source != source:
-                logger.info(f"Source {label} is no longer the target, cancelling retry")
                 return False
         
         # Clear any previous cancel flag
@@ -161,13 +160,11 @@ class PlayerController:
             for attempt in range(1, MAX_RETRIES + 1):
                 # Check if retry was cancelled (e.g., user pressed cycle source)
                 if self._cancel_retry.is_set():
-                    logger.info(f"Retry cancelled for {label} (user requested new source)")
                     return False
                 
                 # Check if source is still the target
                 with self._lock:
                     if self._target_source != source:
-                        logger.info(f"Source {label} is no longer the target, cancelling retry")
                         return False
                 
                 try:
@@ -191,13 +188,18 @@ class PlayerController:
                         return False
                     
                     # Attempt to play
+                    # #region agent log
+                    import json, time; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "player_controller.py:185", "message": "About to call backend.play()", "data": {"source_id_to_play": source_id_to_play, "source_type": source_type}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                    # #endregion
                     success = backend.play(source_id_to_play, **kwargs)
+                    # #region agent log
+                    import json, time; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "player_controller.py:186", "message": "backend.play() returned", "data": {"success": success}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                    # #endregion
                     
                     if success:
                         # Check again if this source is still the target before setting it
                         with self._lock:
                             if self._target_source != source:
-                                logger.info(f"Source {label} is no longer the target, stopping backend")
                                 try:
                                     backend.stop()
                                 except Exception as e:
@@ -227,12 +229,6 @@ class PlayerController:
                         item_name = backend.get_current_item()
                         with self._lock:
                             self.history.log_playback_start(source, item_name)
-                        
-                        logger.info(f"Successfully started playback: {label}")
-                        # Log successful connection
-                        self.history.log_network_event('connection_success', status='success',
-                                                      source_id=source.get('id'),
-                                                      source_label=label)
                         # Cancel delayed beep since operation completed quickly
                         delayed_beep.cancel()
                         return True
@@ -240,6 +236,9 @@ class PlayerController:
                         raise BackendError("Backend returned False")
                         
                 except (BackendError, ConnectionError, TimeoutError) as e:
+                    # #region agent log
+                    import json, time; log_data = {"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "player_controller.py:226", "message": "Exception in _play_source_with_retry", "data": {"error": str(e), "error_type": type(e).__name__, "attempt": attempt, "label": label}, "timestamp": int(time.time() * 1000)}; open("/home/skayflakes/rodrigo_radio/.cursor/debug.log", "a").write(json.dumps(log_data) + "\n")
+                    # #endregion
                     # Cancel delayed beep since we're handling the error
                     delayed_beep.cancel()
                     
@@ -262,7 +261,6 @@ class PlayerController:
                                                       source_label=label,
                                                       attempt=attempt,
                                                       error=str(e))
-                        logger.info(f"Retrying in {RETRY_SLEEP} seconds...")
                         play_retry_beep()
                         time.sleep(RETRY_SLEEP)
                     else:
@@ -298,7 +296,6 @@ class PlayerController:
                                                           source_label=label,
                                                           attempt=attempt,
                                                           error=str(e))
-                            logger.info(f"Retrying in {RETRY_SLEEP} seconds...")
                             play_retry_beep()
                             time.sleep(RETRY_SLEEP)
                         else:
@@ -311,7 +308,6 @@ class PlayerController:
                             return False
                     else:
                         if attempt < MAX_RETRIES:
-                            logger.info(f"Retrying in {RETRY_SLEEP} seconds...")
                             play_retry_beep()
                             time.sleep(RETRY_SLEEP)
                         else:
@@ -333,7 +329,6 @@ class PlayerController:
         
         # Wait for previous retry thread to acknowledge cancellation (brief wait)
         if self._active_retry_thread and self._active_retry_thread.is_alive():
-            logger.info("Waiting for previous retry thread to cancel...")
             time.sleep(0.1)  # Brief wait for thread to check cancellation
         
         # Note: Current backend should already be stopped by _on_cycle_source
@@ -348,9 +343,8 @@ class PlayerController:
                 try:
                     if hasattr(old_backend, 'is_playing') and old_backend.is_playing():
                         old_backend.stop()
-                        logger.info(f"Ensured old backend ({old_backend_type}) is stopped")
                 except Exception as e:
-                    logger.debug(f"Old backend already stopped or error: {e}")
+                    pass  # Old backend already stopped or error
             
             # Set new target source
             self._target_source = source
@@ -372,13 +366,11 @@ class PlayerController:
             if not success:
                 # Check if cancelled FIRST
                 if self._cancel_retry.is_set():
-                    logger.info(f"Retry cancelled for {source.get('label')}, not trying next source")
                     return
                 
                 # Check if source is still the target
                 with self._lock:
                     if self._target_source != source:
-                        logger.info(f"Source {source.get('label')} is no longer the target, not trying next source")
                         return
                 
                 # If failed and not cancelled, just log the failure and stop
@@ -392,13 +384,10 @@ class PlayerController:
                         # Check if old backend is different from current backend
                         # (if cycling to same source, they're the same instance)
                         if self.current_backend != captured_old_backend:
-                            try:
-                                captured_old_backend.stop()
-                                logger.info("Double-checked old backend is stopped")
-                            except Exception as e:
-                                logger.debug(f"Old backend already stopped or error: {e}")
-                        else:
-                            logger.debug("Old backend is same as new backend (same source), skipping double-stop")
+                                try:
+                                    captured_old_backend.stop()
+                                except Exception as e:
+                                    pass  # Old backend already stopped or error
                 
                 # Log source change
                 with self._lock:
@@ -440,12 +429,9 @@ class PlayerController:
             True if network became available, False if timeout
         """
         start_time = time.time()
-        logger.info("Waiting for network connectivity before auto-start...")
         
         while time.time() - start_time < timeout:
             if self._check_network_connectivity():
-                elapsed = time.time() - start_time
-                logger.info(f"Network connectivity available after {elapsed:.1f} seconds")
                 return True
             time.sleep(NETWORK_CHECK_INTERVAL)
         
@@ -470,7 +456,6 @@ class PlayerController:
             source_label = current_source.get('label', 'Unknown source')
             announce_source(source_label)
             
-            logger.info("Auto-starting playback from saved state")
             self._switch_source(current_source)
         else:
             logger.info("No current source, waiting for user input")
@@ -495,20 +480,16 @@ class PlayerController:
                 
                 if is_playing:
                     # Pause
-                    logger.info("Attempting to pause playback")
                     if self.current_backend.pause():
                         self.history.log_user_input('button_play_pause', source=self.current_source, action='pause')
                         self.history.log_action('pause')  # Keep for backward compatibility
-                        logger.info("Playback paused")
                     else:
                         logger.warning("Pause command returned False")
                 else:
                     # Resume or start
-                    logger.info("Attempting to resume playback")
                     if self.current_backend.resume():
                         self.history.log_user_input('button_play_pause', source=self.current_source, action='resume')
                         self.history.log_action('resume')  # Keep for backward compatibility
-                        logger.info("Playback resumed")
                     else:
                         logger.warning("Resume command returned False, trying to restart source")
                         # Try to restart current source
@@ -532,13 +513,10 @@ class PlayerController:
                 item_name = self.current_backend.get_current_item()
                 if item_name and self.current_source:
                     self.history.log_playback_start(self.current_source, item_name)
-                logger.info("Previous track")
                 
                 # Resume playback if paused (like a normal music player)
                 if not self.current_backend.is_playing():
-                    if self.current_backend.resume():
-                        logger.info("Resumed playback after previous track")
-                    else:
+                    if not self.current_backend.resume():
                         logger.warning("Failed to resume playback after previous track")
             else:
                 logger.warning("Previous track not available")
@@ -556,13 +534,10 @@ class PlayerController:
                 item_name = self.current_backend.get_current_item()
                 if item_name and self.current_source:
                     self.history.log_playback_start(self.current_source, item_name)
-                logger.info("Next track")
                 
                 # Resume playback if paused (like a normal music player)
                 if not self.current_backend.is_playing():
-                    if self.current_backend.resume():
-                        logger.info("Resumed playback after next track")
-                    else:
+                    if not self.current_backend.resume():
                         logger.warning("Failed to resume playback after next track")
             else:
                 logger.warning("Next track not available")
@@ -570,7 +545,6 @@ class PlayerController:
     def _on_cycle_source(self):
         """Handle cycle source button press."""
         cycle_start = time.perf_counter()
-        logger.info("Cycling to next source")
         # Cancel any ongoing retry attempts
         self._cancel_retry.set()
         
@@ -604,11 +578,8 @@ class PlayerController:
                 if self.current_backend:
                     try:
                         self.current_backend.stop()
-                        logger.info("Stopped current playback immediately on cycle")
                     except Exception as e:
                         logger.warning(f"Error stopping current backend: {e}")
-        else:
-            logger.info("Cycling to same source, not stopping current playback")
         stop_time = time.perf_counter() - stop_start
         
         # Announce the source
@@ -759,7 +730,6 @@ class PlayerController:
         
         self._state_monitor_thread = threading.Thread(target=monitor_state, daemon=True)
         self._state_monitor_thread.start()
-        logger.info("Started state file monitor thread")
     
     def _stop_state_monitor(self):
         """Stop the state file monitor thread."""
@@ -767,21 +737,14 @@ class PlayerController:
             return
         
         self._state_monitor_active = False
-        if self._state_monitor_thread and self._state_monitor_thread.is_alive():
-            logger.info("Stopping state file monitor thread")
     
     def run(self):
         """Run the controller (blocks forever waiting for button presses)."""
-        logger.info("Player controller running, waiting for button input...")
         self.button_handler.wait()
     
     def _on_volume_change(self, volume: int):
         """Handle volume change from rotary encoder."""
-        # Use throttled logging - only log significant changes
-        from utils.logger import should_log_volume_change
-        if should_log_volume_change(volume, is_mute_toggle=False):
-            # Log to history with proper action name (not through logger.info to avoid meta-logging)
-            self.history.log_audio_event('volume_set', value=float(volume))
+        # Volume changes are not logged - only mute toggles (user input) are logged
         # Could add TTS announcement here if desired
         # announce_volume(volume)
     
@@ -808,11 +771,9 @@ class PlayerController:
             if self.current_source and new_item_name:
                 # Log the track change as a new playback start
                 self.history.log_playback_start(self.current_source, new_item_name)
-                logger.debug(f"Track changed to: {new_item_name}")
     
     def _on_playback_ended(self):
         """Handle callback when playback ends naturally (e.g., playlist finished)."""
-        logger.info("Playback ended naturally - cycling to next source")
         # Cycle to next source in a separate thread to avoid blocking
         def cycle_in_background():
             # Small delay to ensure backend state is updated
@@ -824,8 +785,6 @@ class PlayerController:
     
     def shutdown(self):
         """Gracefully shutdown the controller."""
-        logger.info("Shutting down player controller...")
-        
         # Stop state monitor
         self._stop_state_monitor()
         

@@ -146,3 +146,4 @@ ALTER TABLE event_logs DROP COLUMN metadata;
 - Column names avoid reserved words: `function` → `function_name`, `error` → `error_message`
 - **Important:** The `message` column should contain only the actual message content. Since `log_level` and `timestamp`/`timestamp_local` are already separate columns, we don't need to duplicate that information in the message field.
 - **Timezone Fix:** `timestamp_local` should use Asia/Manila timezone (+08). The code currently uses `astimezone()` without arguments, which defaults to system timezone (often UTC in containers). We'll explicitly use `Asia/Manila` timezone using `zoneinfo.ZoneInfo('Asia/Manila')` or `timezone(timedelta(hours=8))`.
+
